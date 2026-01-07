@@ -10,7 +10,6 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, File, UploadFile, HTTPException, BackgroundTasks, Form
-from fastapi.responses import StreamingResponse
 from sse_starlette.sse import EventSourceResponse
 
 from ..config import get_settings
@@ -18,7 +17,6 @@ from ..models import (
     TranscriptionResult,
     TranscriptionProgress,
     TranscriptionStatus,
-    ErrorResponse,
 )
 
 logger = logging.getLogger(__name__)
@@ -50,6 +48,8 @@ async def transcribe_audio(
     
     Supports: .m4a, .wav, .mp3, .aac, .flac, .ogg, .webm
     Max file size: 500MB
+    
+    Note: First request may take longer as the Whisper model needs to load (~3GB).
     """
     validate_audio_file(file)
     
@@ -58,28 +58,50 @@ async def transcribe_audio(
     
     logger.info(f"📤 Received file: {file.filename} (ID: {transcription_id})")
     
-    # TODO: Implement actual transcription
-    # For now, return a placeholder response
-    
     # Read file content
     content = await file.read()
     file_size_mb = len(content) / (1024 * 1024)
     logger.info(f"   File size: {file_size_mb:.2f} MB")
     
-    # Placeholder transcription
-    transcription_text = f"[Transcription placeholder for {file.filename}]"
+    # Check file size
+    if len(content) > settings.max_upload_size_bytes:
+        raise HTTPException(
+            status_code=413,
+            detail=f"File too large. Maximum size: {settings.max_upload_size_mb}MB"
+        )
     
-    processing_time = (datetime.utcnow() - start_time).total_seconds()
-    
-    return TranscriptionResult(
-        id=transcription_id,
-        status=TranscriptionStatus.COMPLETED,
-        text=transcription_text,
-        duration_seconds=0.0,  # TODO: Get actual audio duration
-        word_count=len(transcription_text.split()),
-        processing_time_seconds=processing_time,
-        created_at=start_time,
-    )
+    try:
+        # Get the Whisper service and transcribe
+        from ..services import get_whisper_service
+        whisper = get_whisper_service()
+        
+        result = await whisper.transcribe_bytes(content)
+        
+        processing_time = (datetime.utcnow() - start_time).total_seconds()
+        
+        return TranscriptionResult(
+            id=transcription_id,
+            status=TranscriptionStatus.COMPLETED,
+            text=result.text,
+            duration_seconds=result.duration_seconds,
+            word_count=result.word_count,
+            processing_time_seconds=processing_time,
+            created_at=start_time,
+        )
+        
+    except ImportError as e:
+        # ML dependencies not installed
+        logger.warning(f"ML dependencies not available: {e}")
+        raise HTTPException(
+            status_code=503,
+            detail="Transcription service not available. ML dependencies may not be installed."
+        )
+    except Exception as e:
+        logger.error(f"Transcription failed: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Transcription failed: {str(e)}"
+        )
 
 
 @router.post("/upload/stream")
@@ -95,39 +117,77 @@ async def transcribe_audio_stream(
     validate_audio_file(file)
     
     transcription_id = str(uuid.uuid4())
+    start_time = datetime.utcnow()
+    
     logger.info(f"📤 Received file for streaming: {file.filename} (ID: {transcription_id})")
     
     content = await file.read()
+    file_size_mb = len(content) / (1024 * 1024)
+    logger.info(f"   File size: {file_size_mb:.2f} MB")
+    
+    # Check file size
+    if len(content) > settings.max_upload_size_bytes:
+        async def error_generator():
+            yield {
+                "event": "error",
+                "data": f"File too large. Maximum size: {settings.max_upload_size_mb}MB"
+            }
+        return EventSourceResponse(error_generator())
+    
+    progress_updates = []
+    
+    def on_progress(progress):
+        """Callback for progress updates."""
+        progress_updates.append(progress)
     
     async def generate_events():
         """Generate SSE events for transcription progress."""
-        # Send initial event
-        yield {
-            "event": "progress",
-            "data": TranscriptionProgress(
-                status=TranscriptionStatus.PROCESSING,
-                progress_percent=0,
-                current_chunk=0,
-                total_chunks=1,
-                message="Starting transcription..."
-            ).model_dump_json()
-        }
-        
-        # TODO: Implement chunked transcription with real progress
-        
-        # Send completion event
-        yield {
-            "event": "complete", 
-            "data": TranscriptionResult(
-                id=transcription_id,
-                status=TranscriptionStatus.COMPLETED,
-                text=f"[Streaming transcription placeholder for {file.filename}]",
-                duration_seconds=0.0,
-                word_count=5,
-                processing_time_seconds=0.1,
-                created_at=datetime.utcnow(),
-            ).model_dump_json()
-        }
+        try:
+            from ..services import get_whisper_service
+            whisper = get_whisper_service()
+            
+            # Send initial event
+            yield {
+                "event": "progress",
+                "data": TranscriptionProgress(
+                    status=TranscriptionStatus.PROCESSING,
+                    progress_percent=0,
+                    current_chunk=0,
+                    total_chunks=1,
+                    message="Loading model and starting transcription..."
+                ).model_dump_json()
+            }
+            
+            # Run transcription with progress callback
+            result = await whisper.transcribe_bytes(content, progress_callback=on_progress)
+            
+            processing_time = (datetime.utcnow() - start_time).total_seconds()
+            
+            # Send completion event
+            yield {
+                "event": "complete",
+                "data": TranscriptionResult(
+                    id=transcription_id,
+                    status=TranscriptionStatus.COMPLETED,
+                    text=result.text,
+                    duration_seconds=result.duration_seconds,
+                    word_count=result.word_count,
+                    processing_time_seconds=processing_time,
+                    created_at=start_time,
+                ).model_dump_json()
+            }
+            
+        except ImportError as e:
+            yield {
+                "event": "error",
+                "data": "Transcription service not available. ML dependencies may not be installed."
+            }
+        except Exception as e:
+            logger.error(f"Streaming transcription failed: {e}")
+            yield {
+                "event": "error",
+                "data": f"Transcription failed: {str(e)}"
+            }
     
     return EventSourceResponse(generate_events())
 
