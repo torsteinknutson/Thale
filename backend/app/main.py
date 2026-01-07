@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .config import get_settings
 from .models import HealthResponse
-from .routers import transcription, summarization
+from .routers import transcription, summarization, streaming
 
 # Configure logging
 logging.basicConfig(
@@ -62,6 +62,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(transcription.router, prefix="/api/transcription", tags=["transcription"])
+app.include_router(streaming.router, prefix="/api/streaming", tags=["streaming"])
 app.include_router(summarization.router, prefix="/api/summarization", tags=["summarization"])
 
 
@@ -89,10 +90,19 @@ async def health_check():
     except ImportError:
         pass  # torch not installed yet
     
+    # Check model status
+    model_loaded = False
+    try:
+        from .services import get_whisper_service
+        whisper = get_whisper_service()
+        model_loaded = whisper.is_loaded
+    except Exception:
+        pass
+
     return HealthResponse(
         status="ok",
         version=__version__,
         gpu_available=gpu_available,
-        model_loaded=False,  # TODO: Check if model is loaded
+        model_loaded=model_loaded,
         timestamp=datetime.utcnow(),
     )

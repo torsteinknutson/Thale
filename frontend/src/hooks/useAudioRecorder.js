@@ -29,7 +29,7 @@ export function useAudioRecorder() {
         }
     }, [])
 
-    const startRecording = useCallback(async () => {
+    const startRecording = useCallback(async (onDataAvailable) => {
         setError(null)
         setPermissionDenied(false)
         audioChunksRef.current = []
@@ -61,6 +61,9 @@ export function useAudioRecorder() {
             mediaRecorder.ondataavailable = (event) => {
                 if (event.data.size > 0) {
                     audioChunksRef.current.push(event.data)
+                    if (onDataAvailable) {
+                        onDataAvailable(event.data)
+                    }
                 }
             }
 

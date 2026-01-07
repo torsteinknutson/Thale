@@ -1,8 +1,10 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useEffect } from 'react'
 import { useAudioRecorder } from '../hooks/useAudioRecorder'
+import { useWebSocket } from '../hooks/useWebSocket'
 import { PrimaryButton, SecondaryButton } from '@fremtind/jokul/button'
 import { Loader } from '@fremtind/jokul/loader'
 import { SuccessMessage, ErrorMessage } from '@fremtind/jokul/message'
+import { Checkbox } from '@fremtind/jokul/checkbox'
 
 /**
  * Audio recorder component with real-time recording and transcription.
@@ -22,9 +24,52 @@ function AudioRecorder({ onTranscriptionComplete }) {
         clearRecording,
     } = useAudioRecorder()
 
+    const {
+        isConnected,
+        lastMessage,
+        error: wsError,
+        connect,
+        disconnect,
+        sendMessage
+    } = useWebSocket()
+
     const [isTranscribing, setIsTranscribing] = useState(false)
     const [transcription, setTranscription] = useState(null)
     const [error, setError] = useState(null)
+    const [isLiveMode, setIsLiveMode] = useState(false)
+    const [liveText, setLiveText] = useState('')
+
+    // Handle incoming WebSocket messages
+    useEffect(() => {
+        if (lastMessage && lastMessage.text) {
+            setLiveText(lastMessage.text)
+        }
+    }, [lastMessage])
+
+    const handleStartRecording = async () => {
+        setError(null)
+        setLiveText('')
+
+        if (isLiveMode) {
+            connect('/api/streaming/realtime')
+        }
+
+        await startRecording((chunk) => {
+            if (isLiveMode) {
+                // Send chunk if connected, otherwise it might be dropped (acceptable for MVP)
+                // Ideally we'd buffer until connected
+                sendMessage(chunk)
+            }
+        })
+    }
+
+    const handleStopRecording = () => {
+        stopRecording()
+        if (isLiveMode) {
+            // Give a moment for final chunks to be sent/processed
+            setTimeout(() => disconnect(), 1000)
+        }
+    }
 
     const handleTranscribe = async () => {
         if (!audioBlob) return
@@ -65,6 +110,8 @@ function AudioRecorder({ onTranscriptionComplete }) {
         clearRecording()
         setTranscription(null)
         setError(null)
+        setLiveText('')
+        if (isConnected) disconnect()
     }
 
     return (
@@ -73,9 +120,20 @@ function AudioRecorder({ onTranscriptionComplete }) {
             <div className="recording-controls">
                 {!audioBlob && !isRecording && (
                     <>
+                        <div style={{ marginBottom: 'var(--jkl-spacing-24)' }}>
+                            <Checkbox
+                                name="live-mode"
+                                value="live"
+                                checked={isLiveMode}
+                                onChange={(e) => setIsLiveMode(e.target.checked)}
+                            >
+                                Sanntidstranskribering (Beta)
+                            </Checkbox>
+                        </div>
+
                         <button
                             className="recording-button"
-                            onClick={startRecording}
+                            onClick={handleStartRecording}
                             aria-label="Start opptak"
                         >
                             🎙️
@@ -88,12 +146,19 @@ function AudioRecorder({ onTranscriptionComplete }) {
                     <>
                         <button
                             className={`recording-button recording-button--recording ${isPaused ? 'recording-button--paused' : ''}`}
-                            onClick={stopRecording}
+                            onClick={handleStopRecording}
                             aria-label="Stopp opptak"
                         >
                             ⏹️
                         </button>
                         <p className="jkl-heading-3 recording-time">{formattedTime}</p>
+
+                        {isLiveMode && (
+                            <div style={{ marginTop: 'var(--jkl-spacing-16)', color: isConnected ? 'var(--jkl-color-success)' : 'var(--jkl-color-text-subdued)' }}>
+                                {isConnected ? '🟢 Tilkoblet' : '⚪ Kobler til...'}
+                            </div>
+                        )}
+
                         <div style={{ display: 'flex', gap: 'var(--jkl-spacing-8)' }}>
                             {isPaused ? (
                                 <SecondaryButton onClick={resumeRecording}>
@@ -104,14 +169,26 @@ function AudioRecorder({ onTranscriptionComplete }) {
                                     ⏸️ Pause
                                 </SecondaryButton>
                             )}
-                            <SecondaryButton onClick={stopRecording}>
+                            <SecondaryButton onClick={handleStopRecording}>
                                 ⏹️ Stopp
                             </SecondaryButton>
                         </div>
                     </>
                 )}
 
-                {audioBlob && !isRecording && !transcription && (
+                {/* Live Transcription Display */}
+                {isLiveMode && (isRecording || liveText) && (
+                    <div className="transcription-result" style={{ marginTop: 'var(--jkl-spacing-24)', width: '100%', textAlign: 'left' }}>
+                        <p className="jkl-small" style={{ marginBottom: 'var(--jkl-spacing-8)', color: 'var(--jkl-color-text-subdued)' }}>
+                            Sanntidstranskripsjon:
+                        </p>
+                        <div className="transcription-result__text" style={{ minHeight: '100px', fontStyle: 'italic' }}>
+                            {liveText || 'Snakk nå...'}
+                        </div>
+                    </div>
+                )}
+
+                {audioBlob && !isRecording && !transcription && !isLiveMode && (
                     <>
                         <div className="recording-preview">
                             <p className="jkl-body">🎵 Opptak klart ({formattedTime})</p>
@@ -131,6 +208,15 @@ function AudioRecorder({ onTranscriptionComplete }) {
                         </div>
                     </>
                 )}
+
+                {/* If live mode finished, show buttons to start new or save */}
+                {audioBlob && !isRecording && isLiveMode && (
+                    <div style={{ display: 'flex', gap: 'var(--jkl-spacing-16)', marginTop: 'var(--jkl-spacing-24)' }}>
+                        <SecondaryButton onClick={handleNewRecording}>
+                            Nytt opptak
+                        </SecondaryButton>
+                    </div>
+                )}
             </div>
 
             {/* Loading State */}
@@ -141,9 +227,9 @@ function AudioRecorder({ onTranscriptionComplete }) {
             )}
 
             {/* Error Messages */}
-            {(recordingError || error) && (
+            {(recordingError || error || wsError) && (
                 <div style={{ marginTop: 'var(--jkl-spacing-16)' }}>
-                    <ErrorMessage>{recordingError || error}</ErrorMessage>
+                    <ErrorMessage>{recordingError || error || wsError}</ErrorMessage>
                 </div>
             )}
 
@@ -160,8 +246,8 @@ function AudioRecorder({ onTranscriptionComplete }) {
                 </div>
             )}
 
-            {/* Transcription Result */}
-            {transcription && (
+            {/* Transcription Result (for non-live mode) */}
+            {transcription && !isLiveMode && (
                 <div className="transcription-result" style={{ marginTop: 'var(--jkl-spacing-32)' }}>
                     <div className="transcription-result__header">
                         <h3 className="jkl-heading-4">Transkripsjon</h3>

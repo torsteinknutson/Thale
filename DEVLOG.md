@@ -197,6 +197,61 @@ docker-compose -f docker-compose.cpu.yml up --build
 
 ---
 
+## Checkpoint 4: Phase 4 Complete - Real-Time Streaming & Infrastructure
+**Date**: 2026-01-07  
+**Commit**: (Pending)  
+**Phase**: Phase 4 & 5 (Partial)
+
+### What Was Done
+
+**Phase 4: Real-Time Features**
+- **Backend Streaming**:
+  - Created `backend/app/routers/streaming.py` with WebSocket endpoint `/api/streaming/realtime`.
+  - Implemented buffered transcription logic (accumulates chunks, transcribes periodically).
+  - Updated `WhisperService` to expose model loading status.
+  - Updated `main.py` to include streaming router and fix health check.
+- **Frontend Streaming**:
+  - Created `useWebSocket` hook for connection management.
+  - Updated `useAudioRecorder` to support data streaming callback.
+  - Updated `AudioRecorder.jsx` with "Live Transkribering" toggle and real-time text display.
+  - Configured Vite proxy for WebSocket support (`ws: true`).
+
+**Phase 5: Infrastructure (Artifacts)**
+- Created `infrastructure/` directory structure.
+- Added `infrastructure/README.md` with deployment guide.
+- Created `infrastructure/aws/cloudformation/ecr.yml` for container registries.
+
+### Key Files Created/Modified
+```
+backend/
+├── app/routers/streaming.py    # WebSocket endpoint
+├── app/main.py                 # Router inclusion
+└── app/services/whisper_service.py
+
+frontend/
+├── src/hooks/useWebSocket.js   # WS hook
+├── src/components/AudioRecorder.jsx # Streaming UI
+├── src/hooks/useAudioRecorder.js
+└── vite.config.js              # WS Proxy
+
+infrastructure/
+├── README.md
+└── aws/cloudformation/ecr.yml
+```
+
+### Verified Working
+- ✅ Backend starts with new streaming router.
+- ✅ Frontend builds with new components.
+- ✅ Health check correctly reports model status.
+- ✅ WebSocket proxy configured in Vite.
+
+### Next Steps
+1. **Test Streaming**: Verify real-time transcription with actual microphone input.
+2. **AWS Deployment**: Use the CloudFormation templates to provision resources.
+3. **Optimization**: Improve streaming latency (consider VAD or smaller chunks).
+
+---
+
 *To add a new checkpoint, copy the template below and fill in the details:*
 
 ```markdown
