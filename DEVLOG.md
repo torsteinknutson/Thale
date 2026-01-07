@@ -246,9 +246,47 @@ infrastructure/
 - ✅ WebSocket proxy configured in Vite.
 
 ### Next Steps
-1. **Test Streaming**: Verify real-time transcription with actual microphone input.
-2. **AWS Deployment**: Use the CloudFormation templates to provision resources.
-3. **Optimization**: Improve streaming latency (consider VAD or smaller chunks).
+1. Test with actual meeting recordings
+2. AWS Deployment (CloudFormation)
+
+---
+
+## Checkpoint 5: Phase 3 Redesign - Single Page Dashboard
+**Date**: 2026-01-07  
+**Commit**: (Pending)  
+**Phase**: Phase 3 (Redesign)
+
+### What Was Done
+
+**Frontend Redesign**
+- **Single Page Architecture**: Consolidated all functionality into `DashboardPage.jsx`.
+- **Visual Enhancements**:
+  - Implemented `AudioVisualizer` with Web Audio API for real-time gain/waveform.
+  - Added "Glassmorphism" styling and premium UI elements.
+  - Created a responsive grid layout.
+- **New Features**:
+  - **Bedrock Integration**: Added "Lag AI-sammendrag" button connected to `/api/summarize`.
+  - **Copy to Clipboard**: Added one-click copy functionality.
+  - **Live Transcription**: Integrated WebSocket streaming directly into the dashboard.
+
+### Key Files Created/Modified
+```
+frontend/
+├── src/pages/DashboardPage.jsx    # Main single-page view
+├── src/components/AudioVisualizer.jsx # Gain meter
+├── src/App.jsx                    # Updated routing
+├── src/index.css                  # Dashboard styling
+└── src/hooks/useAudioRecorder.js  # Expose media stream
+```
+
+### Verified Working
+- ✅ Frontend builds successfully.
+- ✅ New components imported correctly.
+- ✅ Bedrock API integration wired up.
+
+### Next Steps
+1. **User Testing**: Verify the new UI flow.
+2. **AWS Deployment**: Proceed with infrastructure setup.
 
 ---
 

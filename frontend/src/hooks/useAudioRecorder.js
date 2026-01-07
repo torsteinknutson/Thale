@@ -166,6 +166,7 @@ export function useAudioRecorder() {
         pauseRecording,
         resumeRecording,
         clearRecording,
+        stream: streamRef.current, // Expose stream for visualization
     }
 }
 

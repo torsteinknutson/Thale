@@ -263,61 +263,41 @@ THALE/
 
 ---
 
-## 6. Phase 3: Frontend Development
+## 6. Phase 3: Frontend Redesign (Single Page Dashboard)
 
-### 6.1 Core Layout & Navigation
-- [ ] Create `Header.jsx` with Jøkul Logo component
-- [ ] Create main layout with navigation
-- [ ] Implement responsive design
+### 6.1 Unified Dashboard Layout
+- [ ] Refactor to single-page application (SPA) structure
+- [ ] Create a modern, premium "Dashboard" layout
+- [ ] Integrate Recording, Upload, and Results into one cohesive view
+- [ ] Implement "Glassmorphism" design aesthetic with Jøkul components
 
-### 6.2 File Upload Component
-- [ ] Create drag-and-drop file upload zone
-- [ ] Implement file type validation (.m4a, .wav, .mp3, .aac, .flac, .ogg)
-- [ ] Add file size validation
-- [ ] Use Jøkul `FileInput` component or custom implementation
+### 6.2 Enhanced Audio Recorder
+- [ ] Add real-time Volume/Gain meter (Canvas/Web Audio API)
+- [ ] prominent Record/Stop controls
+- [ ] Live transcription text stream display
 
-### 6.3 Transcription Display
-- [ ] Create `TranscriptionResult.jsx` component
-- [ ] Implement progress indicator during transcription
-- [ ] Add copy-to-clipboard functionality
-- [ ] Add download as .txt functionality
+### 6.3 Transcription & Processing Area
+- [ ] Editable text area for transcription results
+- [ ] "Copy to Clipboard" functionality with visual feedback
+- [ ] "Process with AI" button (AWS Bedrock integration)
+- [ ] Summary/Analysis display panel
 
-### 6.4 Summarization Integration
-- [ ] Create `SummaryPanel.jsx` component
-- [ ] Add "Generate Summary" button
-- [ ] Display formatted summary with loading state
-
-### 6.5 UI Components (Jøkul)
-Key Jøkul components to use:
-- `PrimaryButton`, `SecondaryButton` - Actions
-- `Loader` - Loading states
-- `Message` - Success/error feedback
-- `Card` - Content containers
-- `FileInput` - File upload
-- `TextArea` - Display transcription (read-only)
-- `ProgressBar` - Upload/transcription progress
+### 6.4 AWS Bedrock Integration (Frontend)
+- [ ] Connect to `/api/summarize` endpoint
+- [ ] Implement processing states (Loading, Success, Error)
+- [ ] Display formatted AI response (Markdown support)
 
 ---
 
-## 7. Phase 4: Real-Time Features
+## 7. Phase 4: Real-Time Features & Polish
 
-### 7.1 Audio Recording in Browser
-- [ ] Create `useAudioRecorder` hook:
-  ```javascript
-  // Key functionality:
-  - Request microphone permission
-  - MediaRecorder API for recording
-  - Audio chunk streaming to backend
-  - Recording controls (start/stop/pause)
-  ```
-- [ ] Create `AudioRecorder.jsx` component with recording UI
-- [ ] Add audio waveform visualization (optional, nice-to-have)
+### 7.1 Audio Visualization
+- [ ] Implement smooth waveform or bar visualizer
+- [ ] Ensure high-performance rendering (requestAnimationFrame)
 
-### 7.2 WebSocket Real-Time Transcription
-- [ ] Create `useWebSocket` hook for connection management
-- [ ] Implement backend WebSocket endpoint for streaming audio
-- [ ] Process audio chunks in real-time on backend
-- [ ] Stream transcription results back to client
+### 7.2 WebSocket Optimization
+- [ ] Optimize streaming latency
+- [ ] Handle connection drops gracefully
 
 ### 7.3 Progressive Display
 - [ ] Display partial transcription as it's generated
