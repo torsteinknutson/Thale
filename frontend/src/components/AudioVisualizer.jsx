@@ -14,8 +14,13 @@ export function AudioVisualizer({ stream, isRecording }) {
             return
         }
 
-        if (!audioContextRef.current) {
-            audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)()
+        try {
+            if (!audioContextRef.current) {
+                audioContextRef.current = new (window.AudioContext || window.webkitAudioContext)()
+            }
+        } catch (e) {
+            console.error("Failed to create AudioContext", e)
+            return
         }
 
         const audioContext = audioContextRef.current

@@ -6,14 +6,15 @@ import './App.css'
 function App() {
   return (
     <BrowserRouter>
-      <div className="app-container">
+      <div className="app-layout">
         <header className="app-header">
-          <div className="header-content">
+          <div className="header-left">
             <JokulLogo className="app-logo" />
-            <h1 className="jkl-heading-2" style={{ marginLeft: '1rem', color: 'var(--jkl-color-text-default)' }}>
-              Thale
-            </h1>
           </div>
+          <div className="header-center">
+            <h1 className="app-title">Thale</h1>
+          </div>
+          <div className="header-right"></div>
         </header>
 
         <main className="app-main">
@@ -24,8 +25,7 @@ function App() {
 
         {/* Footer */}
         <footer className="app-footer">
-          <p>THALE - Speech-to-Text for Fremtind Forsikring</p>
-          <p>Intern bruk</p>
+          {/* Content removed as requested */}
         </footer>
       </div>
     </BrowserRouter>

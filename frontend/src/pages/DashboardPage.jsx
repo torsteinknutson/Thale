@@ -7,7 +7,6 @@ import { TextArea } from '@fremtind/jokul/text-area'
 import { Loader } from '@fremtind/jokul/loader'
 import { SuccessMessage, ErrorMessage, InfoMessage } from '@fremtind/jokul/message'
 import { Card } from '@fremtind/jokul/card'
-import { Checkbox } from '@fremtind/jokul/checkbox'
 
 export default function DashboardPage() {
     // Audio Recording Hook
@@ -142,6 +141,104 @@ export default function DashboardPage() {
         setTimeout(() => setCopySuccess(false), 2000)
     }
 
+    const [transcriptionProgress, setTranscriptionProgress] = useState(0)
+
+    // Handle File Select (Auto-transcribe with Streaming Progress)
+    const fileInputRef = useRef(null)
+
+    const handleFileSelect = async (event) => {
+        const file = event.target.files[0]
+        if (!file) return
+
+        setIsTranscribing(true)
+        setTranscriptionProgress(0)
+        setError(null)
+        setTranscriptionText('')
+        setSummary(null)
+
+        try {
+            const formData = new FormData()
+            formData.append('file', file)
+            formData.append('language', 'no')
+
+            // Use the SSE streaming endpoint
+            const response = await fetch('/api/transcription/upload/stream', {
+                method: 'POST',
+                body: formData,
+            })
+
+            if (!response.ok) throw new Error('Transkripsjon feilet (' + response.status + ')')
+
+            // Read the stream
+            const reader = response.body.getReader()
+            const decoder = new TextDecoder()
+
+            let buffer = ''
+
+            while (true) {
+                const { value, done } = await reader.read()
+
+                if (value) {
+                    buffer += decoder.decode(value, { stream: !done })
+                }
+
+                const parts = buffer.split('\n\n')
+                // Keep the last part in buffer if we are not done yet, otherwise process everything
+                if (!done) {
+                    buffer = parts.pop() || ''
+                } else {
+                    buffer = ''
+                }
+
+                for (const part of parts) {
+                    if (!part.trim()) continue
+                    // ... process message ...
+                    const lines = part.split('\n')
+                    let eventType = 'message'
+                    let dataStr = ''
+
+                    for (const line of lines) {
+                        if (line.startsWith('event: ')) {
+                            eventType = line.substring(7).trim()
+                        } else if (line.startsWith('data: ')) {
+                            dataStr = line.substring(6)
+                        }
+                    }
+
+                    if (dataStr && dataStr !== '[DONE]') {
+                        try {
+                            const data = JSON.parse(dataStr)
+
+                            if (eventType === 'progress' || data.status === 'processing') {
+                                setTranscriptionProgress(data.progress_percent)
+                                if (data.partial_text) {
+                                    setTranscriptionText(data.partial_text)
+                                }
+                            } else if (eventType === 'complete' || data.status === 'completed') {
+                                setTranscriptionProgress(100)
+                                setTranscriptionText(data.text)
+                            } else if (eventType === 'error') {
+                                throw new Error(data)
+                            }
+                        } catch (e) {
+                            if (eventType === 'error') setError(dataStr)
+                        }
+                    }
+                }
+
+                if (done) break
+            }
+        } catch (err) {
+            setError(err.message)
+        } finally {
+            setIsTranscribing(false)
+            setTranscriptionProgress(0)
+            if (fileInputRef.current) {
+                fileInputRef.current.value = ''
+            }
+        }
+    }
+
     return (
         <div className="dashboard-page">
             <div className="dashboard-grid">
@@ -190,21 +287,58 @@ export default function DashboardPage() {
                             )}
                         </div>
 
-                        {/* Settings */}
-                        <div className="recording-settings">
-                            <Checkbox
-                                name="live-mode"
-                                value="live"
-                                checked={isLiveMode}
-                                onChange={(e) => setIsLiveMode(e.target.checked)}
+                        {/* Settings & Upload */}
+                        <div className="recording-settings" style={{ gap: '1rem', alignItems: 'center' }}>
+                            <label className="custom-checkbox-label">
+                                <input
+                                    type="checkbox"
+                                    checked={isLiveMode}
+                                    onChange={(e) => setIsLiveMode(e.target.checked)}
+                                />
+                                <span>Sanntidstranskribering</span>
+                            </label>
+
+                            <input
+                                type="file"
+                                ref={fileInputRef}
+                                onChange={handleFileSelect}
+                                style={{ display: 'none' }}
+                                accept="audio/*,.m4a,.wav,.mp3,.aac,.flac,.ogg,.webm"
+                            />
+
+                            <SecondaryButton
+                                onClick={() => fileInputRef.current?.click()}
+                                disabled={isTranscribing || isRecording}
                             >
-                                Sanntidstranskribering
-                            </Checkbox>
+                                {isTranscribing ? <Loader /> : 'Last opp fil'}
+                            </SecondaryButton>
                         </div>
+
+                        {/* File Transcription Status */}
+                        {isTranscribing && (
+                            <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+                                <InfoMessage>Transkriberer fil... ({Math.round(transcriptionProgress)}%)</InfoMessage>
+                                <div style={{
+                                    width: '100%',
+                                    height: '8px',
+                                    background: '#eee',
+                                    borderRadius: '4px',
+                                    marginTop: '8px',
+                                    overflow: 'hidden'
+                                }}>
+                                    <div style={{
+                                        width: `${transcriptionProgress}%`,
+                                        height: '100%',
+                                        background: '#2b2b2c',
+                                        transition: 'width 0.3s ease'
+                                    }} />
+                                </div>
+                            </div>
+                        )}
 
                         {/* Post-recording actions */}
                         {audioBlob && !isRecording && !isLiveMode && (
-                            <div className="post-recording-actions">
+                            <div className="post-recording-actions" style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center' }}>
                                 <PrimaryButton onClick={handleTranscribeFile} disabled={isTranscribing}>
                                     {isTranscribing ? <Loader /> : 'Transkriber opptak'}
                                 </PrimaryButton>

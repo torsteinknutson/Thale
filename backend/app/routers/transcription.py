@@ -5,6 +5,7 @@ Handles audio file upload and transcription using Whisper model.
 
 import logging
 import uuid
+import asyncio
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
@@ -146,6 +147,14 @@ async def transcribe_audio_stream(
             from ..services import get_whisper_service
             whisper = get_whisper_service()
             
+            # Create a queue for progress updates
+            queue = asyncio.Queue()
+            loop = asyncio.get_running_loop()
+            
+            def on_progress(progress):
+                """Callback for progress updates (called from thread)."""
+                loop.call_soon_threadsafe(queue.put_nowait, progress)
+            
             # Send initial event
             yield {
                 "event": "progress",
@@ -154,12 +163,56 @@ async def transcribe_audio_stream(
                     progress_percent=0,
                     current_chunk=0,
                     total_chunks=1,
-                    message="Loading model and starting transcription..."
+                    message="Starting transcription..."
                 ).model_dump_json()
             }
             
-            # Run transcription with progress callback
-            result = await whisper.transcribe_bytes(content, progress_callback=on_progress)
+            # Start transcription as a background task
+            task = asyncio.create_task(whisper.transcribe_bytes(content, progress_callback=on_progress))
+            
+            # Process queue while task is running
+            while not task.done():
+                try:
+                    # Wait for next progress update or timeout to check task status
+                    progress_data = await asyncio.wait_for(queue.get(), timeout=0.1)
+                    
+                    # Convert dataclass to Pydantic model
+                    progress_model = TranscriptionProgress(
+                        status=TranscriptionStatus.PROCESSING,
+                        progress_percent=progress_data.progress_percent,
+                        current_chunk=progress_data.current_chunk,
+                        total_chunks=progress_data.total_chunks,
+                        message=progress_data.message,
+                        partial_text=progress_data.partial_text
+                    )
+                    
+                    yield {
+                        "event": "progress",
+                        "data": progress_model.model_dump_json()
+                    }
+                except asyncio.TimeoutError:
+                    continue
+            
+            # Drain any remaining items in queue
+            while not queue.empty():
+                progress_data = queue.get_nowait()
+                
+                progress_model = TranscriptionProgress(
+                    status=TranscriptionStatus.PROCESSING,
+                    progress_percent=progress_data.progress_percent,
+                    current_chunk=progress_data.current_chunk,
+                    total_chunks=progress_data.total_chunks,
+                    message=progress_data.message,
+                    partial_text=progress_data.partial_text
+                )
+                
+                yield {
+                    "event": "progress",
+                    "data": progress_model.model_dump_json()
+                }
+
+            # Get the result (this will raise if task failed)
+            result = await task
             
             processing_time = (datetime.utcnow() - start_time).total_seconds()
             

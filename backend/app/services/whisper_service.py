@@ -269,6 +269,10 @@ class WhisperService:
                     partial_text=" ".join(all_transcriptions),
                 ))
             
+            # Log progress to terminal every 10 chunks or 10%
+            if (i + 1) % 10 == 0 or (i + 1) == num_chunks:
+                logger.info(f"   ⏳ Progress: {i + 1}/{num_chunks} chunks ({progress:.1f}%)")
+            
             # Transcribe chunk (run in thread pool to not block async)
             transcription = await asyncio.get_event_loop().run_in_executor(
                 None,

@@ -29,6 +29,7 @@ class TranscriptionProgress(BaseModel):
     current_chunk: int = 0
     total_chunks: int = 0
     message: str = ""
+    partial_text: str = ""
 
 
 class TranscriptionResult(BaseModel):

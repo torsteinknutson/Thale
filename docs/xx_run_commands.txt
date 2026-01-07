@@ -1,0 +1,19 @@
+
+
+
+Run backend: 
+
+cd backend && source venv/bin/activate && uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+
+
+
+Run frontend: 
+
+npm run dev --prefix frontend 
+
+
+
+Start bedrock:
+
+aws sso login --profile nice-dev
