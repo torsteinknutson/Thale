@@ -16,3 +16,56 @@
   font-weight: 600;
   background: var(--jkl-color-background-container-high);
 }
+
+/* Theme Toggle */
+.theme-toggle-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  transition: background 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-toggle-btn:hover {
+  background: var(--jkl-color-background-container-high);
+}
+
+/* Dark Mode Overrides */
+[data-theme="dark"] {
+  --jkl-color-background-page: #1f2024;
+  --jkl-color-background-container: #2b2c31;
+  --jkl-color-background-container-high: #3b3c42;
+  --jkl-color-text-default: #ffffff;
+  --jkl-color-text-subdued: #a0a0a0;
+  --jkl-color-border-separator: #404040;
+  --jkl-color-border-input: #606060;
+}
+
+[data-theme="dark"] .dashboard-card {
+  background: var(--jkl-color-background-container);
+  color: var(--jkl-color-text-default);
+}
+
+[data-theme="dark"] .app-header {
+  background: var(--jkl-color-background-container);
+  border-bottom: 1px solid var(--jkl-color-border-separator);
+}
+
+[data-theme="dark"] .app-title {
+  color: var(--jkl-color-text-default);
+}
+
+[data-theme="dark"] body {
+  background-color: var(--jkl-color-background-page);
+  color: var(--jkl-color-text-default);
+}
+
+[data-theme="dark"] .transcription-result__text {
+  background: var(--jkl-color-background-page);
+  border-color: var(--jkl-color-border-separator);
+}

@@ -61,18 +61,25 @@ body {
   z-index: 100;
 }
 
+.header-right {
+  justify-self: end;
+  display: flex;
+}
+
 
 .app-title {
   font-family: "Fremtind Grotesk", sans-serif;
   font-weight: 700;
-  font-size: 2.5rem; /* Increased from 1.5rem */
+  font-size: 2.5rem;
+  /* Increased from 1.5rem */
   color: #2b2b2c;
   letter-spacing: -0.02em;
   margin: 0;
 }
 
 .app-logo {
-  max-width: 180px; /* Constrain logo width */
+  max-width: 180px;
+  /* Constrain logo width */
   height: auto;
   display: block;
 }
@@ -303,7 +310,7 @@ body {
   display: grid;
   grid-template-columns: 1fr 1.5fr;
   gap: 32px;
-  align-items: start;
+  align-items: stretch;
 }
 
 @media (max-width: 900px) {
@@ -477,6 +484,16 @@ body {
   margin-bottom: 8px;
 }
 
+.card-actions .jkl-button--tertiary {
+  text-decoration: none !important;
+  border-bottom: none !important;
+}
+
+.card-actions .jkl-button--tertiary:hover {
+  text-decoration: none !important;
+  background: transparent !important;
+}
+
 .jkl-heading-2,
 .jkl-heading-3 {
   font-family: "Fremtind Grotesk", sans-serif;
@@ -505,4 +522,56 @@ body {
   100% {
     box-shadow: 0 0 0 0 rgba(220, 50, 50, 0);
   }
+
+  100% {
+    box-shadow: 0 0 0 0 rgba(220, 50, 50, 0);
+  }
+}
+
+/* Dark Mode Overrides for Index specific styles */
+[data-theme="dark"] .jkl-heading-2,
+[data-theme="dark"] .jkl-heading-3 {
+  color: var(--jkl-color-text-default);
+}
+
+[data-theme="dark"] .timer-display {
+  color: var(--jkl-color-text-default);
+}
+
+[data-theme="dark"] .visualizer-container {
+  background: var(--jkl-color-background-page);
+}
+
+[data-theme="dark"] .transcription-textarea textarea {
+  background: var(--jkl-color-background-page);
+  border-color: var(--jkl-color-border-separator);
+  color: var(--jkl-color-text-default);
+}
+
+[data-theme="dark"] .transcription-textarea textarea:focus {
+  background: var(--jkl-color-background-container);
+  border-color: var(--jkl-color-text-default);
+}
+
+[data-theme="dark"] .custom-checkbox-label {
+  background: var(--jkl-color-background-container-high);
+  color: var(--jkl-color-text-default);
+}
+
+[data-theme="dark"] .custom-checkbox-label:hover {
+  background: var(--jkl-color-border-input);
+}
+
+[data-theme="dark"] .summary-content {
+  background: var(--jkl-color-background-page);
+  color: var(--jkl-color-text-default);
+}
+
+[data-theme="dark"] .stop-btn-large {
+  background: #ffffff;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+[data-theme="dark"] .stop-icon {
+  background: #2b2b2c;
 }
