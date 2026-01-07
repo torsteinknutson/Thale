@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, NavLink } from 'react-router-dom'
 import { Logo } from '@fremtind/jokul/logo'
 import HomePage from './pages/HomePage'
 import TranscribePage from './pages/TranscribePage'
+import RecordPage from './pages/RecordPage'
 import './App.css'
 
 function App() {
@@ -23,7 +24,10 @@ function App() {
               Hjem
             </NavLink>
             <NavLink to="/transcribe" className="jkl-link">
-              Transkriber
+              Last opp
+            </NavLink>
+            <NavLink to="/record" className="jkl-link">
+              Ta opp
             </NavLink>
           </nav>
         </header>
@@ -33,6 +37,7 @@ function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/transcribe" element={<TranscribePage />} />
+            <Route path="/record" element={<RecordPage />} />
           </Routes>
         </main>
 

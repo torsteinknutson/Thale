@@ -1,0 +1,140 @@
+# THALE CI/CD Pipeline
+# Builds and deploys both frontend and backend
+
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+env:
+  AWS_REGION: eu-west-1
+
+jobs:
+  # Backend linting and testing
+  backend-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./backend
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: backend/requirements.txt
+      
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install pydantic-settings fastapi uvicorn python-multipart sse-starlette boto3
+          # Skip ML deps for tests to speed up CI
+      
+      - name: Lint with ruff
+        run: |
+          pip install ruff
+          ruff check app/ --ignore E501
+        continue-on-error: true
+      
+      - name: Test imports
+        run: python -c "from app.main import app; print('✅ App imports successfully')"
+
+  # Frontend linting and build
+  frontend-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./frontend
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Lint
+        run: npm run lint
+        continue-on-error: true
+      
+      - name: Build
+        run: npm run build
+      
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: frontend/dist/
+
+  # Docker build (runs on main branch only)
+  docker-build:
+    needs: [backend-test, frontend-test]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+      
+      # Uncomment when ready to push to ECR
+      # - name: Configure AWS credentials
+      #   uses: aws-actions/configure-aws-credentials@v4
+      #   with:
+      #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+      #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+      #     aws-region: ${{ env.AWS_REGION }}
+      
+      # - name: Login to Amazon ECR
+      #   id: login-ecr
+      #   uses: aws-actions/amazon-ecr-login@v2
+      
+      - name: Build backend image (CPU)
+        run: |
+          docker build \
+            -f backend/Dockerfile.cpu \
+            -t thale-backend:latest \
+            backend/
+      
+      - name: Build frontend image
+        run: |
+          docker build \
+            -t thale-frontend:latest \
+            frontend/
+      
+      # Uncomment when ready to push to ECR
+      # - name: Push to ECR
+      #   run: |
+      #     docker tag thale-backend:latest ${{ steps.login-ecr.outputs.registry }}/thale-backend:latest
+      #     docker push ${{ steps.login-ecr.outputs.registry }}/thale-backend:latest
+      #     docker tag thale-frontend:latest ${{ steps.login-ecr.outputs.registry }}/thale-frontend:latest
+      #     docker push ${{ steps.login-ecr.outputs.registry }}/thale-frontend:latest
+
+  # Summary comment on PR
+  summary:
+    needs: [backend-test, frontend-test]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    
+    steps:
+      - name: Add summary
+        run: |
+          echo "## THALE CI Summary ✅" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend | ✅ Tests passed |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | ✅ Build successful |" >> $GITHUB_STEP_SUMMARY

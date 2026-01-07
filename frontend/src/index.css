@@ -192,6 +192,24 @@ body {
   }
 }
 
+.recording-button--paused {
+  animation: none;
+  opacity: 0.7;
+}
+
+.recording-time {
+  font-variant-numeric: tabular-nums;
+  color: var(--jkl-color-text-error);
+}
+
+.recording-preview {
+  text-align: center;
+}
+
+.audio-recorder {
+  text-align: center;
+}
+
 /* Feature cards */
 .feature-cards {
   display: grid;

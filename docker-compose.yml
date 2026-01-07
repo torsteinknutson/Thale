@@ -1,0 +1,57 @@
+# THALE Docker Compose - Development Configuration
+# For local development with GPU support
+
+services:
+  # Backend API with GPU access
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: thale-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=development
+      - DEBUG=true
+      - LOG_LEVEL=INFO
+      - FRONTEND_URL=http://localhost:5173,http://localhost:80
+      - AWS_PROFILE=${AWS_PROFILE:-nice-dev}
+      - AWS_REGION=${AWS_REGION:-eu-west-1}
+    volumes:
+      # Mount AWS credentials for Bedrock access
+      - ~/.aws:/home/appuser/.aws:ro
+      # Mount code for hot reload in dev
+      - ./backend/app:/app/app:ro
+    # GPU access (requires nvidia-docker)
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [ gpu ]
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8000/api/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+
+  # Frontend (production build served by nginx)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: thale-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+
+# Network configuration
+networks:
+  default:
+    name: thale-network
