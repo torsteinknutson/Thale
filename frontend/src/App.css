@@ -1,0 +1,18 @@
+/* App-specific styles */
+
+/* Navigation active state */
+.app-header__nav .jkl-link {
+  text-decoration: none;
+  padding: var(--jkl-spacing-8) var(--jkl-spacing-12);
+  border-radius: var(--jkl-spacing-4);
+  transition: background 0.2s ease;
+}
+
+.app-header__nav .jkl-link:hover {
+  background: var(--jkl-color-background-container-high);
+}
+
+.app-header__nav .jkl-link.active {
+  font-weight: 600;
+  background: var(--jkl-color-background-container-high);
+}

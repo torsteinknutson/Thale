@@ -1,0 +1,263 @@
+/* Import Jøkul core styles */
+@import "@fremtind/jokul/styles/styles.min.css";
+
+/* Root variables and global styles */
+:root {
+  font-family: "Fremtind Grotesk", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+  color-scheme: light dark;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Global styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  min-height: 100vh;
+  background: var(--jkl-color-background-page);
+  color: var(--jkl-color-text-default);
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* App Layout */
+.app-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.app-header {
+  background: var(--jkl-color-background-container);
+  border-bottom: 1px solid var(--jkl-color-border-separator);
+  padding: var(--jkl-spacing-16) var(--jkl-spacing-24);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.app-header__title {
+  display: flex;
+  align-items: center;
+  gap: var(--jkl-spacing-12);
+}
+
+.app-header__nav {
+  display: flex;
+  gap: var(--jkl-spacing-16);
+}
+
+/* Main content */
+.app-main {
+  flex: 1;
+  padding: var(--jkl-spacing-40) var(--jkl-spacing-24);
+  max-width: 1200px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Hero section */
+.hero {
+  text-align: center;
+  padding: var(--jkl-spacing-64) 0;
+}
+
+.hero__title {
+  margin-bottom: var(--jkl-spacing-16);
+}
+
+.hero__description {
+  color: var(--jkl-color-text-subdued);
+  margin-bottom: var(--jkl-spacing-32);
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* Upload area */
+.upload-area {
+  border: 2px dashed var(--jkl-color-border-input);
+  border-radius: var(--jkl-spacing-8);
+  padding: var(--jkl-spacing-48);
+  text-align: center;
+  background: var(--jkl-color-background-container);
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.upload-area:hover,
+.upload-area--active {
+  border-color: var(--jkl-color-border-focus);
+  background: var(--jkl-color-background-container-high);
+}
+
+.upload-area__icon {
+  font-size: 48px;
+  margin-bottom: var(--jkl-spacing-16);
+  color: var(--jkl-color-text-subdued);
+}
+
+.upload-area__text {
+  margin-bottom: var(--jkl-spacing-8);
+}
+
+.upload-area__hint {
+  color: var(--jkl-color-text-subdued);
+  font-size: 0.875rem;
+}
+
+/* Transcription result */
+.transcription-result {
+  margin-top: var(--jkl-spacing-32);
+}
+
+.transcription-result__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--jkl-spacing-16);
+}
+
+.transcription-result__actions {
+  display: flex;
+  gap: var(--jkl-spacing-8);
+}
+
+.transcription-result__text {
+  background: var(--jkl-color-background-container);
+  border: 1px solid var(--jkl-color-border-separator);
+  border-radius: var(--jkl-spacing-8);
+  padding: var(--jkl-spacing-24);
+  white-space: pre-wrap;
+  line-height: 1.8;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+/* Recording controls */
+.recording-controls {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--jkl-spacing-24);
+  padding: var(--jkl-spacing-32);
+}
+
+.recording-button {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  border: none;
+  background: var(--jkl-color-background-action);
+  color: var(--jkl-color-text-on-action);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s ease;
+}
+
+.recording-button:hover {
+  transform: scale(1.05);
+}
+
+.recording-button--recording {
+  background: var(--jkl-color-text-error);
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.1);
+  }
+}
+
+/* Feature cards */
+.feature-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: var(--jkl-spacing-24);
+  margin-top: var(--jkl-spacing-48);
+}
+
+.feature-card {
+  padding: var(--jkl-spacing-24);
+  background: var(--jkl-color-background-container);
+  border: 1px solid var(--jkl-color-border-separator);
+  border-radius: var(--jkl-spacing-8);
+  text-align: center;
+  transition: all 0.2s ease;
+}
+
+.feature-card:hover {
+  border-color: var(--jkl-color-border-focus);
+  transform: translateY(-2px);
+}
+
+.feature-card__icon {
+  font-size: 32px;
+  margin-bottom: var(--jkl-spacing-16);
+}
+
+.feature-card__title {
+  margin-bottom: var(--jkl-spacing-8);
+}
+
+/* Footer */
+.app-footer {
+  background: var(--jkl-color-background-container);
+  border-top: 1px solid var(--jkl-color-border-separator);
+  padding: var(--jkl-spacing-24);
+  text-align: center;
+  color: var(--jkl-color-text-subdued);
+  font-size: 0.875rem;
+}
+
+/* Utilities */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .app-header {
+    flex-direction: column;
+    gap: var(--jkl-spacing-16);
+  }
+
+  .hero {
+    padding: var(--jkl-spacing-32) 0;
+  }
+
+  .upload-area {
+    padding: var(--jkl-spacing-24);
+  }
+}
