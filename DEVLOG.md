@@ -121,6 +121,82 @@ THALE/
 
 ---
 
+## Checkpoint 3: Phases 2-4 Complete - Full Feature Implementation
+**Date**: 2026-01-07  
+**Commit**: 517d047  
+**Phase**: Phase 2-4 Complete
+
+### What Was Done
+
+**Phase 2: Whisper & Bedrock Services**
+- Ported WhisperService from NBWhisper with async support
+- Ported BedrockService from DOKAI with Norwegian prompts
+- Added singleton pattern for efficient model management
+- Implemented progress callbacks for streaming
+
+**Phase 3: Real-Time Audio Recording**
+- Created useAudioRecorder hook (MediaRecorder API)
+- Created AudioRecorder component with UI controls
+- Added RecordPage with live recording flow
+- Implemented pause/resume and playback preview
+
+**Phase 4: Docker & CI/CD**
+- Backend Dockerfile with NVIDIA CUDA for GPU
+- Backend Dockerfile.cpu for development
+- Frontend multi-stage Dockerfile with nginx
+- docker-compose.yml with GPU support
+- docker-compose.cpu.yml for CPU-only dev
+- GitHub Actions CI/CD workflow
+
+### Key Files Created
+```
+backend/
+├── app/services/
+│   ├── whisper_service.py   # Async transcription
+│   └── bedrock_service.py   # Norwegian summarization
+├── Dockerfile               # GPU with pre-loaded model
+└── Dockerfile.cpu           # CPU for dev
+
+frontend/
+├── src/components/AudioRecorder.jsx
+├── src/hooks/useAudioRecorder.js
+├── src/pages/RecordPage.jsx
+├── Dockerfile
+└── nginx.conf
+
+docker-compose.yml           # GPU deployment
+docker-compose.cpu.yml       # CPU development
+.github/workflows/ci.yml     # CI/CD pipeline
+```
+
+### Verified Working
+- ✅ Backend starts with ML dependencies
+- ✅ Health endpoint returns correct GPU/model status
+- ✅ Transcription API works with test audio
+- ✅ Frontend builds successfully
+- ✅ All pages render (Home, Upload, Record)
+
+### Commands for Development
+```bash
+# Local development
+cd backend && source venv/bin/activate && uvicorn app.main:app --reload
+cd frontend && npm run dev
+
+# Docker (GPU)
+docker-compose up --build
+
+# Docker (CPU)
+docker-compose -f docker-compose.cpu.yml up --build
+```
+
+### Next Steps
+1. Test with actual meeting recordings
+2. Add WebSocket for real-time streaming transcription
+3. Configure AWS deployment (ECR, ECS/EC2)
+4. Set up GitHub secrets for CI/CD
+
+---
+
 *To add a new checkpoint, copy the template below and fill in the details:*
 
 ```markdown
