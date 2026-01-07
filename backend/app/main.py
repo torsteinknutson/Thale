@@ -79,13 +79,20 @@ async def root():
 @app.get("/api/health", response_model=HealthResponse, tags=["health"])
 async def health_check():
     """Health check endpoint for monitoring."""
-    import torch
     from . import __version__
+    
+    # Check GPU availability (gracefully handle missing torch)
+    gpu_available = False
+    try:
+        import torch
+        gpu_available = torch.cuda.is_available()
+    except ImportError:
+        pass  # torch not installed yet
     
     return HealthResponse(
         status="ok",
         version=__version__,
-        gpu_available=torch.cuda.is_available(),
+        gpu_available=gpu_available,
         model_loaded=False,  # TODO: Check if model is loaded
         timestamp=datetime.utcnow(),
     )
