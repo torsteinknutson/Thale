@@ -406,3 +406,24 @@ This creates a more harmonious and visually balanced interface where the primary
   - Removed rigid global `min-height` constraints on textareas to allow for more flexible, component-specific sizing overrides.
 
 This state represents a highly polished, visually consistent ("Fremtind Grotesk" everywhere), and responsive interface ready for end-user testing.
+
+## Checkpoint 10: Enhanced Audio Controls & Playback
+**Date**: 2026-01-09
+**Phase**: Phase 4 Polish
+
+### What Was Done
+- **Advanced Audio Controls**:
+  - Implemented **Playback** functionality (Play button) to review recordings immediately.
+  - Added explicit **Stop** button.
+  - Updated recording logic to **Append** (continue) to the existing session when restarting after a stop, rather than overwriting.
+  - **Layout**: Consolidated [Upload] [Play] [Record] [Stop] [Timer] into a single unified control group on the left.
+- **UI Simplification**:
+  - Removed the "Sanntid" checkbox (Realtime mode is now default/hidden).
+  - Moved **Upload** button to the main control group for better accessibility.
+- **Bug Fixes**:
+  - Resolved syntax errors and nesting issues in the Dashboard JSX.
+  - Cleaned up duplicate state declarations.
+- **Content**:
+  - Refined Norwegian phrasing in prompt templates for better summary generation.
+
+The dashboard now offers a robust "Record -> Pause/Stop -> Review -> Continue" workflow.

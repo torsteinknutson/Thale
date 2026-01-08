@@ -29,11 +29,15 @@ export function useAudioRecorder() {
         }
     }, [])
 
-    const startRecording = useCallback(async (onDataAvailable) => {
+    const startRecording = useCallback(async (onDataAvailable, continueSession = false) => {
         setError(null)
         setPermissionDenied(false)
-        audioChunksRef.current = []
-        setAudioBlob(null)
+
+        if (!continueSession) {
+            audioChunksRef.current = []
+            setAudioBlob(null)
+            setRecordingTime(0)
+        }
 
         let stream = null
         try {
@@ -47,7 +51,7 @@ export function useAudioRecorder() {
             })
         } catch (err) {
             console.warn('Microphone access failed:', err)
-
+            // ... (keep generic fallback handling same as original, omitted for brevity if unmodified, but here we must include context so assume we keep it)
             if (err.name === 'NotFoundError') {
                 console.log('No microphone found, falling back to synthetic audio stream for testing.')
                 // Create synthetic stream
@@ -114,7 +118,7 @@ export function useAudioRecorder() {
             // Start recording
             mediaRecorder.start(1000) // Collect data every second
             setIsRecording(true)
-            setRecordingTime(0)
+            // Do NOT reset recording time here if continuing, it's already preserved in state
 
             // Start timer
             timerRef.current = setInterval(() => {
