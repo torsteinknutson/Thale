@@ -106,6 +106,18 @@ function AudioRecorder({ onTranscriptionComplete }) {
         }
     }
 
+    const handleDownload = () => {
+        if (transcription?.text) {
+            const blob = new Blob([transcription.text], { type: 'text/plain' })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `transcription-${transcription.id || Date.now()}.txt`
+            a.click()
+            URL.revokeObjectURL(url)
+        }
+    }
+
     const handleNewRecording = () => {
         clearRecording()
         setTranscription(null)
@@ -251,9 +263,14 @@ function AudioRecorder({ onTranscriptionComplete }) {
                 <div className="transcription-result" style={{ marginTop: 'var(--jkl-spacing-32)' }}>
                     <div className="transcription-result__header">
                         <h3 className="jkl-heading-4">Transkripsjon</h3>
-                        <SecondaryButton onClick={handleNewRecording}>
-                            Nytt opptak
-                        </SecondaryButton>
+                        <div className="transcription-result__actions">
+                            <SecondaryButton onClick={handleDownload}>
+                                Last ned
+                            </SecondaryButton>
+                            <SecondaryButton onClick={handleNewRecording}>
+                                Nytt opptak
+                            </SecondaryButton>
+                        </div>
                     </div>
 
                     <SuccessMessage>

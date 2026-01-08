@@ -41,6 +41,7 @@ async def summarize_text(request: SummarizationRequest):
             text=request.text,
             style=request.style,
             max_length=request.max_length,
+            prompt=request.prompt,
         )
         
         original_word_count = len(request.text.split())

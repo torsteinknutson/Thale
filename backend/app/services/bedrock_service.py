@@ -67,17 +67,62 @@ class BedrockService:
     ):
         self.model_id = model_id
         self.max_tokens = max_tokens
+        self.profile_name = profile_name
+        self.region_name = region_name
         self.client = None
         self._initialized = False
         
+        self.model_id = model_id
+        self.max_tokens = max_tokens
+        self.profile_name = profile_name
+        self.region_name = region_name
+        self.client = None
+        self._initialized = False
+        self.session = None
+        
+        # 1. Try with specific profile
         try:
-            session = boto3.Session(profile_name=profile_name, region_name=region_name)
-            self.client = session.client("bedrock-runtime")
-            self._initialized = True
-            logger.info(f"✅ Bedrock service initialized with profile '{profile_name}'")
+            self.session = boto3.Session(profile_name=profile_name, region_name=region_name)
+            self.client = self.session.client("bedrock-runtime")
+            
+            if self.check_connection():
+                self._initialized = True
+                logger.info(f"✅ Bedrock service fully initialized with profile '{profile_name}'")
+                return
         except Exception as e:
-            logger.warning(f"⚠️ Could not initialize Bedrock: {e}")
+            logger.debug(f"Could not load profile '{profile_name}': {e}")
+
+        # 2. Fallback: Try default credentials (env vars or default profile)
+        try:
+            logger.info(f"🔄 Attempting fallback to default AWS credentials/env vars...")
+            self.session = boto3.Session(region_name=region_name)
+            self.client = self.session.client("bedrock-runtime")
+            
+            if self.check_connection():
+                self._initialized = True
+                logger.info(f"✅ Bedrock service initialized using DEFAULT credentials (env vars or default profile)")
+            else:
+                logger.warning(f"⚠️ Bedrock service: AWS connection check failed for default credentials.")
+                self.client = None
+                
+        except Exception as e:
+            logger.warning(f"⚠️ Could not initialize Bedrock session (Fallback failed): {e}")
             logger.warning("   Summarization features will not be available.")
+
+    def check_connection(self) -> bool:
+        """
+        Ping AWS STS to verify credentials are valid and active.
+        """
+        try:
+            # Use STS to verify credentials (lightweight)
+            sts = self.session.client("sts")
+            identity = sts.get_caller_identity()
+            logger.info(f"🔑 AWS Credentials verified. User: {identity['Arn'].split('/')[-1]}")
+            return True
+        except Exception as e:
+            logger.error(f"❌ AWS Connection Failed: {e}")
+            logger.error("   Please run 'aws sso login' if your session has expired.")
+            return False
     
     @property
     def is_available(self) -> bool:
@@ -89,6 +134,7 @@ class BedrockService:
         text: str,
         style: str = "meeting_notes",
         max_length: int = 500,
+        prompt: Optional[str] = None,
     ) -> str:
         """
         Generate a summary of the provided text.
@@ -97,6 +143,8 @@ class BedrockService:
             text: The text to summarize
             style: Summary style (meeting_notes, bullet_points, executive_summary)
             max_length: Maximum summary length (approximate)
+            prompt: Optional custom prompt template. If provided, overrides style.
+                    Should contain placeholder {text} for the input text.
             
         Returns:
             The generated summary
@@ -105,8 +153,26 @@ class BedrockService:
             return "Feil: AWS Bedrock er ikke konfigurert. Sjekk AWS-legitimasjon."
         
         # Get the appropriate prompt template
-        prompt_template = SUMMARY_PROMPTS.get(style, SUMMARY_PROMPTS["meeting_notes"])
-        prompt = prompt_template.format(text=text[:15000])  # Limit input size
+        if prompt:
+            prompt_template = prompt
+        else:
+            prompt_template = SUMMARY_PROMPTS.get(style, SUMMARY_PROMPTS["meeting_notes"])
+            
+        # Ensure the prompt contains the text placeholder
+        if "{text}" in prompt_template:
+            final_prompt = prompt_template.format(text=text[:15000])  # Limit input size
+        else:
+            # If the custom prompt doesn't follow our template format, append the text or handle it gracefully
+            # For simplicity, we assume the user knows to include {text} or we append it.
+            # But the user request implies they edit the prompt which might be just instructions.
+            # Let's assume for now we append the text if {text} is missing, 
+            # OR we trust the frontend sends a template.
+            # Given the requirements: "user can edit them... split box at top... underneath should be response"
+            # It's safest to assume the edited text IS the prompt *instruction*, and we should likely append the text?
+            # Or the user sees the *whole* prompt including placeholder?
+            # Let's support {text} formatting if present, otherwise append.
+            final_prompt = f"{prompt_template}\n\nTEKST:\n{text[:15000]}"
+
         
         try:
             body = {
@@ -116,7 +182,7 @@ class BedrockService:
                 "messages": [
                     {
                         "role": "user",
-                        "content": prompt
+                        "content": final_prompt
                     }
                 ]
             }

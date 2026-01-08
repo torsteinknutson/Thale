@@ -8,6 +8,33 @@ import { Loader } from '@fremtind/jokul/loader'
 import { SuccessMessage, ErrorMessage, InfoMessage } from '@fremtind/jokul/message'
 import { Card } from '@fremtind/jokul/card'
 
+const PROMPT_TEMPLATES = {
+    "oppsummering_kort": {
+        label: "Oppsummering (kort)",
+        text: "Lag en kort og konsis oppsummering av teksten under. Maks 5 setninger.\n\nTEKST:\n{text}"
+    },
+    "oppsummering_lang": {
+        label: "Oppsummering (lang)",
+        text: "Lag en detaljert oppsummering av teksten under. Inkluder alle viktige detaljer og nyanser.\n\nTEKST:\n{text}"
+    },
+    "motereferat": {
+        label: "Møtereferat",
+        text: "Du er en ekspert på å lage strukturerte møtereferater.\nAnalyser følgende transkripsjon av et møte og lag et profesjonelt møtereferat på norsk.\n\nStrukturer referatet slik:\n1. **Hovedtemaer diskutert**\n2. **Viktige beslutninger**\n3. **Handlingspunkter** (hvem gjør hva, med frister hvis nevnt)\n4. **Oppfølgingssaker**\n\nHold referatet konsist men fullstendig.\n\nTRANSKRIPSJON:\n{text}\n\nMØTEREFERAT:"
+    },
+    "executive_summary": {
+        label: "Executive Summary",
+        text: "Lag en kort ledersammendrag (executive summary) på norsk av følgende tekst.\nSammendraget skal være 2-3 avsnitt og dekke:\n- Hovedbudskapet/konklusjonen\n- Viktigste funn eller beslutninger\n- Anbefalte neste steg\n\nTEKST:\n{text}\n\nLEDERSAMMENDRAG:"
+    },
+    "teknisk": {
+        label: "Teknisk",
+        text: "Analyser teksten under fra et teknisk perspektiv. Trekk frem tekniske løsninger, arkitekturvalg, og tekniske utfordringer som blir diskutert.\n\nTEKST:\n{text}"
+    },
+    "custom": {
+        label: "Custom",
+        text: "{text}"
+    }
+}
+
 export default function DashboardPage() {
     // Audio Recording Hook
     const {
@@ -34,11 +61,17 @@ export default function DashboardPage() {
     } = useWebSocket()
 
     // State
+    // State
     const [transcriptionText, setTranscriptionText] = useState('')
     const [isLiveMode, setIsLiveMode] = useState(true) // Default to live mode
     const [isTranscribing, setIsTranscribing] = useState(false)
     const [isSummarizing, setIsSummarizing] = useState(false)
-    const [summary, setSummary] = useState(null)
+
+    // AI Summary State
+    const [selectedPromptKey, setSelectedPromptKey] = useState('motereferat')
+    const [customPromptText, setCustomPromptText] = useState(PROMPT_TEMPLATES['motereferat'].text)
+    const [summaryResult, setSummaryResult] = useState('')
+
     const [error, setError] = useState(null)
     const [copySuccess, setCopySuccess] = useState(false)
 
@@ -55,7 +88,7 @@ export default function DashboardPage() {
     // Start Recording Handler
     const handleStartRecording = async () => {
         setError(null)
-        setSummary(null)
+        setSummaryResult('')
         setTranscriptionText('')
         setCopySuccess(false)
 
@@ -107,7 +140,7 @@ export default function DashboardPage() {
     }
 
     // Summarize Handler (Bedrock)
-    const handleSummarize = async () => {
+    const handleGenerateSummary = async () => {
         if (!transcriptionText) return
 
         setIsSummarizing(true)
@@ -119,18 +152,26 @@ export default function DashboardPage() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     text: transcriptionText,
-                    style: 'meeting_notes' // Default style
+                    prompt: customPromptText // Send the edited prompt
                 })
             })
 
-            if (!response.ok) throw new Error('Oppsummering feilet')
+            if (!response.ok) throw new Error('Generering av AI-sammendrag feilet')
 
             const result = await response.json()
-            setSummary(result.summary)
+            setSummaryResult(result.summary)
         } catch (err) {
             setError(err.message)
         } finally {
             setIsSummarizing(false)
+        }
+    }
+
+    const handlePromptChange = (e) => {
+        const key = e.target.value
+        setSelectedPromptKey(key)
+        if (key && PROMPT_TEMPLATES[key]) {
+            setCustomPromptText(PROMPT_TEMPLATES[key].text)
         }
     }
 
@@ -139,6 +180,19 @@ export default function DashboardPage() {
         navigator.clipboard.writeText(transcriptionText)
         setCopySuccess(true)
         setTimeout(() => setCopySuccess(false), 2000)
+    }
+
+    // Download Handler
+    const handleDownload = () => {
+        if (transcriptionText) {
+            const blob = new Blob([transcriptionText], { type: 'text/plain' })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `transcription-${Date.now()}.txt`
+            a.click()
+            URL.revokeObjectURL(url)
+        }
     }
 
     const [transcriptionProgress, setTranscriptionProgress] = useState(0)
@@ -154,7 +208,7 @@ export default function DashboardPage() {
         setTranscriptionProgress(0)
         setError(null)
         setTranscriptionText('')
-        setSummary(null)
+        setSummaryResult('')
 
         try {
             const formData = new FormData()
@@ -288,14 +342,14 @@ export default function DashboardPage() {
                         </div>
 
                         {/* Settings & Upload */}
-                        <div className="recording-settings" style={{ gap: '1rem', alignItems: 'center' }}>
+                        <div className="recording-settings" style={{ gap: '1rem', alignItems: 'center', position: 'relative' }}>
                             <label className="custom-checkbox-label">
                                 <input
                                     type="checkbox"
                                     checked={isLiveMode}
                                     onChange={(e) => setIsLiveMode(e.target.checked)}
                                 />
-                                <span>Sanntidstranskribering</span>
+                                <span>Sanntid</span>
                             </label>
 
                             <input
@@ -306,12 +360,19 @@ export default function DashboardPage() {
                                 accept="audio/*,.m4a,.wav,.mp3,.aac,.flac,.ogg,.webm"
                             />
 
-                            <SecondaryButton
+                            <TertiaryButton
                                 onClick={() => fileInputRef.current?.click()}
                                 disabled={isTranscribing || isRecording}
+                                title="Last opp fil"
                             >
-                                {isTranscribing ? <Loader /> : 'Last opp fil'}
-                            </SecondaryButton>
+                                {isTranscribing ? <Loader /> : (
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="17 8 12 3 7 8"></polyline>
+                                        <line x1="12" y1="3" x2="12" y2="15"></line>
+                                    </svg>
+                                )}
+                            </TertiaryButton>
                         </div>
 
                         {/* File Transcription Status */}
@@ -354,10 +415,17 @@ export default function DashboardPage() {
                 <section className="dashboard-section results-section">
 
                     {/* Transcription Area */}
-                    <Card className="dashboard-card results-card">
+                    <Card className="dashboard-card results-card" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                         <div className="card-header">
                             <h2 className="jkl-heading-3">Transkripsjon</h2>
-                            <div className="card-actions">
+                            <div className="card-actions" style={{ display: 'flex', gap: '8px' }}>
+                                <TertiaryButton onClick={handleDownload} title="Last ned tekst">
+                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                        <polyline points="7 10 12 15 17 10"></polyline>
+                                        <line x1="12" y1="15" x2="12" y2="3"></line>
+                                    </svg>
+                                </TertiaryButton>
                                 <TertiaryButton onClick={handleCopy} title="Kopier tekst">
                                     {copySuccess ? 'Kopiert!' : (
                                         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -373,32 +441,79 @@ export default function DashboardPage() {
                             className="transcription-textarea"
                             value={transcriptionText}
                             onChange={(e) => setTranscriptionText(e.target.value)}
-                            placeholder="Her kommer teksten..."
-                            rows={15}
-                            autoExpand
+                            placeholder="Her kommer transkripsjonen..."
+                            style={{ flex: 1 }}
                         />
+                        <p className="jkl-small" style={{ marginTop: '8px', color: 'var(--jkl-color-text-subdued)' }}>
+                            Du kan redigere teksten her før du lager sammendrag.
+                        </p>
+                    </Card>
+                </section>
 
-                        <div className="action-bar">
-                            <PrimaryButton
-                                onClick={handleSummarize}
-                                disabled={!transcriptionText || isSummarizing}
+                {/* Third Column: AI Summary */}
+                <section className="dashboard-section ai-section">
+                    <Card className="dashboard-card ai-card" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+
+                        {/* Header with Title and Dropdown */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '16px' }}>
+                            <h2 className="jkl-heading-2" style={{ margin: 0 }}>Sammendrag</h2>
+                            <select
+                                className="jkl-select"
+                                value={selectedPromptKey}
+                                onChange={handlePromptChange}
+                                style={{
+                                    padding: '8px 12px',
+                                    borderRadius: '8px',
+                                    border: '1px solid var(--jkl-color-border-input)',
+                                    fontSize: '0.9rem',
+                                    fontFamily: 'inherit',
+                                    background: 'var(--jkl-color-background-input)',
+                                    color: 'var(--jkl-color-text-default)',
+                                    minWidth: '200px'
+                                }}
                             >
-                                {isSummarizing ? 'Genererer...' : '✨ Lag AI-sammendrag'}
+                                {Object.entries(PROMPT_TEMPLATES).map(([key, template]) => (
+                                    <option key={key} value={key}>{template.label}</option>
+                                ))}
+                            </select>
+                        </div>
+
+                        {/* Editable Prompt */}
+                        <div style={{ marginBottom: '24px' }}>
+                            <TextArea
+                                className="transcription-textarea" // Re-use this class for consistency
+                                value={customPromptText}
+                                onChange={(e) => setCustomPromptText(e.target.value)}
+                                rows={12}
+                                style={{ fontSize: '0.9rem', fontFamily: 'monospace', resize: 'vertical', minHeight: '250px' }}
+                            />
+                        </div>
+
+                        {/* Action Button */}
+                        <div style={{ marginBottom: '24px' }}>
+                            <PrimaryButton
+                                onClick={handleGenerateSummary}
+                                disabled={!transcriptionText || isSummarizing}
+                                style={{ width: '100%' }}
+                            >
+                                {isSummarizing ? <Loader /> : '✨ Generer svar med Bedrock'}
                             </PrimaryButton>
                         </div>
-                    </Card>
 
-                    {/* Summary Area */}
-                    {summary && (
-                        <Card className="dashboard-card summary-card fade-in">
-                            <h2 className="jkl-heading-3">Sammendrag (Bedrock)</h2>
-                            <div className="summary-content">
-                                {summary.split('\n').map((line, i) => (
-                                    <p key={i}>{line}</p>
-                                ))}
-                            </div>
-                        </Card>
-                    )}
+                        {/* AI Response Area */}
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                            <h3 className="jkl-heading-3" style={{ marginBottom: '12px' }}>
+                                Resultat
+                            </h3>
+                            <TextArea
+                                className="transcription-textarea" // Re-use this class for consistency
+                                value={summaryResult}
+                                readOnly
+                                placeholder="Resultatet kommer her..."
+                                style={{ flex: 1 }}
+                            />
+                        </div>
+                    </Card>
                 </section>
             </div>
         </div>

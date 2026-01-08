@@ -48,6 +48,7 @@ class SummarizationRequest(BaseModel):
     text: str = Field(..., min_length=10, description="Text to summarize")
     style: str = Field(default="meeting_notes", description="Summary style: meeting_notes, bullet_points, executive_summary")
     max_length: int = Field(default=500, ge=100, le=2000, description="Maximum summary length")
+    prompt: Optional[str] = Field(default=None, description="Custom prompt template to use instead of style-based defaults")
 
 
 class SummarizationResult(BaseModel):

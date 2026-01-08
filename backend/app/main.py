@@ -33,6 +33,14 @@ async def lifespan(app: FastAPI):
     logger.info(f"   Whisper Model: {settings.whisper_model_id}")
     logger.info(f"   Frontend URL: {settings.frontend_url}")
     
+    # Pre-load services to trigger environmental checks
+    try:
+        from .services import get_bedrock_service
+        # This will trigger AWS credential check
+        get_bedrock_service()
+    except Exception as e:
+        logger.warning(f"Could not initialize Bedrock service on startup: {e}")
+
     # TODO: Pre-load Whisper model here for faster first request
     # This is done in lifespan to avoid blocking startup
     
