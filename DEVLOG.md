@@ -341,3 +341,32 @@ frontend/
 ### Next Steps
 1. **Deployment Testing**: Verify AWS SSO login and Bedrock connection on the target machine.
 2. **User Feedback**: Gather feedback on the new prompt workflow.
+
+## Checkpoint 7: UI Redesign & Real-Time Optimizations
+**Date**: 2026-01-08  
+**Commit**: (Pending)  
+**Phase**: Phase 4 Refinements
+
+### What Was Done
+- **Dashboard Redesign**:
+  - Moved recording controls to a **Top Banner**, freeing up significantly more screen space.
+  - Switched from a 3-column layout to a simplified **2-column layout** (Transcription | AI/RAG).
+  - Integrated the Audio Visualizer and new **Subtitle Display** directly into the banner.
+
+- **Real-Time Improvements**:
+  - Reduced backend transcription interval from 5s to **2s** for near-instant feedback.
+  - Implemented a "subtitle" style display that shows the latest spoken text in the banner without a box border.
+  - Added "Sanntid" (Real-time) toggle state persistence and visual feedback ("Lytter...").
+
+- **Feature Additions**:
+  - Added **Download** and **Copy** buttons to the AI Result box.
+  - Unified header styling (all headers now use `jkl-heading-2`).
+  - Improved responsiveness of the grid (collapses to 1 column on smaller screens).
+
+### Key Decisions Made
+- **2-Column Layout**: Prioritizes content (text) over controls, which are now always visible at the top.
+- **2s Latency Trade-off**: Accepted slightly higher compute load for a much snappier user experience, crucial for the "subtitle" feel.
+
+### Next Steps
+1.  **Deploy**: Push changes to main for deployment on the AWS machine.
+2.  **User Testing**: Verify the 2s interval accuracy with the Norwegian model in a real meeting setting.

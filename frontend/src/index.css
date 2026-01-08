@@ -308,16 +308,16 @@ body {
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: 320px 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 24px;
   align-items: stretch;
 }
 
 @media (max-width: 1400px) {
 
-  /* Keep 3 columns but let them be flexible if needed, or switch to 2 earlier */
+  /* Keep 2 columns but let them be flexible if needed, or switch to 2 earlier */
   .dashboard-grid {
-    grid-template-columns: 280px 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 16px;
   }
 }

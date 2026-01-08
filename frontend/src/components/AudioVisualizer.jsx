@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 
-export function AudioVisualizer({ stream, isRecording }) {
+export function AudioVisualizer({ stream, isRecording, width = 300, height = 60 }) {
     const canvasRef = useRef(null)
     const animationRef = useRef(null)
     const analyserRef = useRef(null)
@@ -92,5 +92,5 @@ export function AudioVisualizer({ stream, isRecording }) {
         }
     }, [])
 
-    return <canvas ref={canvasRef} width="300" height="60" className="audio-visualizer" style={{ width: '100%', maxWidth: '300px' }} />
+    return <canvas ref={canvasRef} width={width} height={height} className="audio-visualizer" style={{ width: '100%', maxWidth: `${width}px` }} />
 }

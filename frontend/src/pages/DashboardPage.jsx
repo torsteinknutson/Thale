@@ -195,6 +195,27 @@ export default function DashboardPage() {
         }
     }
 
+    // Summary Copy Handler
+    const [summaryCopySuccess, setSummaryCopySuccess] = useState(false)
+    const handleCopySummary = () => {
+        navigator.clipboard.writeText(summaryResult)
+        setSummaryCopySuccess(true)
+        setTimeout(() => setSummaryCopySuccess(false), 2000)
+    }
+
+    // Summary Download Handler
+    const handleDownloadSummary = () => {
+        if (summaryResult) {
+            const blob = new Blob([summaryResult], { type: 'text/plain' })
+            const url = URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = `sammendrag-${Date.now()}.txt`
+            a.click()
+            URL.revokeObjectURL(url)
+        }
+    }
+
     const [transcriptionProgress, setTranscriptionProgress] = useState(0)
 
     // Handle File Select (Auto-transcribe with Streaming Progress)
@@ -295,121 +316,139 @@ export default function DashboardPage() {
 
     return (
         <div className="dashboard-page">
-            <div className="dashboard-grid">
 
-                {/* Left Column: Recording Controls */}
-                <section className="dashboard-section recording-section">
-                    <Card className="dashboard-card">
-                        <h2 className="jkl-heading-2">Opptak</h2>
+            {/* Recording Banner */}
+            <Card className="recording-banner" style={{ marginBottom: '24px', padding: '16px 32px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '24px' }}>
 
-                        <div className="visualizer-container">
-                            {/* Audio Visualizer */}
-                            <AudioVisualizer stream={stream} isRecording={isRecording} />
-
-                            {/* Timer */}
-                            <div className="timer-display jkl-heading-1">
-                                {formattedTime}
-                            </div>
-                        </div>
-
-                        {/* Controls */}
-                        <div className="controls-container">
-                            {!isRecording ? (
-                                <button
-                                    className="record-btn-large"
-                                    onClick={handleStartRecording}
-                                    title="Start opptak"
-                                >
-                                    <div className="record-icon"></div>
-                                </button>
-                            ) : (
-                                <div className="active-controls">
-                                    <button
-                                        className="stop-btn-large"
-                                        onClick={handleStopRecording}
-                                        title="Stopp opptak"
-                                    >
-                                        <div className="stop-icon"></div>
-                                    </button>
-
-                                    <div className="secondary-controls">
-                                        <SecondaryButton onClick={isPaused ? resumeRecording : pauseRecording}>
-                                            {isPaused ? 'Fortsett' : 'Pause'}
-                                        </SecondaryButton>
-                                    </div>
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Settings & Upload */}
-                        <div className="recording-settings" style={{ gap: '1rem', alignItems: 'center', position: 'relative' }}>
-                            <label className="custom-checkbox-label">
-                                <input
-                                    type="checkbox"
-                                    checked={isLiveMode}
-                                    onChange={(e) => setIsLiveMode(e.target.checked)}
-                                />
-                                <span>Sanntid</span>
-                            </label>
-
-                            <input
-                                type="file"
-                                ref={fileInputRef}
-                                onChange={handleFileSelect}
-                                style={{ display: 'none' }}
-                                accept="audio/*,.m4a,.wav,.mp3,.aac,.flac,.ogg,.webm"
-                            />
-
-                            <TertiaryButton
-                                onClick={() => fileInputRef.current?.click()}
-                                disabled={isTranscribing || isRecording}
-                                title="Last opp fil"
+                {/* Left: Controls */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '24px' }}>
+                    {!isRecording ? (
+                        <button
+                            className="record-btn-large"
+                            onClick={handleStartRecording}
+                            title="Start opptak"
+                            style={{ width: '64px', height: '64px' }}
+                        >
+                            <div className="record-icon" style={{ width: '20px', height: '20px' }}></div>
+                        </button>
+                    ) : (
+                        <div className="active-controls" style={{ flexDirection: 'row', gap: '16px' }}>
+                            <button
+                                className="stop-btn-large"
+                                onClick={handleStopRecording}
+                                title="Stopp opptak"
+                                style={{ width: '64px', height: '64px' }}
                             >
-                                {isTranscribing ? <Loader /> : (
-                                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                        <polyline points="17 8 12 3 7 8"></polyline>
-                                        <line x1="12" y1="3" x2="12" y2="15"></line>
-                                    </svg>
-                                )}
-                            </TertiaryButton>
+                                <div className="stop-icon" style={{ width: '20px', height: '20px' }}></div>
+                            </button>
+
+                            <div className="secondary-controls">
+                                <SecondaryButton onClick={isPaused ? resumeRecording : pauseRecording}>
+                                    {isPaused ? 'Fortsett' : 'Pause'}
+                                </SecondaryButton>
+                            </div>
                         </div>
+                    )}
 
-                        {/* File Transcription Status */}
-                        {isTranscribing && (
-                            <div style={{ marginTop: '1rem', textAlign: 'center' }}>
-                                <InfoMessage>Transkriberer fil... ({Math.round(transcriptionProgress)}%)</InfoMessage>
-                                <div style={{
-                                    width: '100%',
-                                    height: '8px',
-                                    background: '#eee',
-                                    borderRadius: '4px',
-                                    marginTop: '8px',
-                                    overflow: 'hidden'
-                                }}>
-                                    <div style={{
-                                        width: `${transcriptionProgress}%`,
-                                        height: '100%',
-                                        background: '#2b2b2c',
-                                        transition: 'width 0.3s ease'
-                                    }} />
-                                </div>
+                    {/* Timer */}
+                    <div className="timer-display jkl-heading-2" style={{ margin: 0, minWidth: '100px' }}>
+                        {formattedTime}
+                    </div>
+                </div>
+
+                {/* Center: Visualizer and Subtitle */}
+                <div style={{ flex: 1, maxWidth: '400px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: '100%', height: '40px', display: 'flex', alignItems: 'center' }}>
+                        <AudioVisualizer stream={stream} isRecording={isRecording} height={40} width={400} />
+                    </div>
+                    {/* Subtitle Zone */}
+                    <div style={{
+                        height: '24px',
+                        marginTop: '8px',
+                        textAlign: 'center',
+                        fontSize: '0.9rem',
+                        color: 'var(--jkl-color-text-subdued)',
+                        overflow: 'hidden',
+                        whiteSpace: 'nowrap',
+                        textOverflow: 'ellipsis',
+                        maxWidth: '100%',
+                        opacity: isRecording && isLiveMode ? 1 : 0,
+                        transition: 'opacity 0.3s'
+                    }}>
+                        {transcriptionText.slice(-60) || (isRecording && isLiveMode ? "Lyttet..." : "")}
+                    </div>
+                </div>
+
+                {/* Right: Settings & Upload */}
+                <div className="recording-settings" style={{ marginTop: 0, paddingTop: 0, width: 'auto', gap: '16px' }}>
+                    <label className="custom-checkbox-label" style={{ padding: '8px 16px', fontSize: '0.9rem' }}>
+                        <input
+                            type="checkbox"
+                            checked={isLiveMode}
+                            onChange={(e) => setIsLiveMode(e.target.checked)}
+                        />
+                        <span>Sanntid</span>
+                    </label>
+
+                    <input
+                        type="file"
+                        ref={fileInputRef}
+                        onChange={handleFileSelect}
+                        style={{ display: 'none' }}
+                        accept="audio/*,.m4a,.wav,.mp3,.aac,.flac,.ogg,.webm"
+                    />
+
+                    <TertiaryButton
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isTranscribing || isRecording}
+                        title="Last opp fil"
+                    >
+                        {isTranscribing ? <Loader /> : (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                                <span>Last opp fil</span>
                             </div>
                         )}
+                    </TertiaryButton>
 
-                        {/* Post-recording actions */}
-                        {audioBlob && !isRecording && (
-                            <div className="post-recording-actions" style={{ marginTop: '1rem', display: 'flex', justifyContent: 'center' }}>
-                                <PrimaryButton onClick={handleTranscribeFile} disabled={isTranscribing}>
-                                    {isTranscribing ? <Loader /> : 'Transkriber opptak'}
-                                </PrimaryButton>
-                            </div>
-                        )}
+                    {audioBlob && !isRecording && (
+                        <PrimaryButton onClick={handleTranscribeFile} disabled={isTranscribing}>
+                            {isTranscribing ? <Loader /> : 'Transkriber opptak'}
+                        </PrimaryButton>
+                    )}
+                </div>
+            </Card>
 
-                        {error && <ErrorMessage className="mt-4">{error}</ErrorMessage>}
-                        {recordingError && <ErrorMessage className="mt-4">{recordingError}</ErrorMessage>}
-                    </Card>
-                </section>
+            {/* Progress Bar */}
+            {isTranscribing && (
+                <div style={{ marginBottom: '24px', textAlign: 'center' }}>
+                    <InfoMessage>Transkriberer fil... ({Math.round(transcriptionProgress)}%)</InfoMessage>
+                    <div style={{
+                        width: '100%',
+                        height: '4px',
+                        background: '#eee',
+                        borderRadius: '2px',
+                        marginTop: '8px',
+                        overflow: 'hidden'
+                    }}>
+                        <div style={{
+                            width: `${transcriptionProgress}%`,
+                            height: '100%',
+                            background: '#2b2b2c',
+                            transition: 'width 0.3s ease'
+                        }} />
+                    </div>
+                </div>
+            )}
+
+            {error && <ErrorMessage className="mb-24">{error}</ErrorMessage>}
+            {recordingError && <ErrorMessage className="mb-24">{recordingError}</ErrorMessage>}
+
+            <div className="dashboard-grid">
 
                 {/* Right Column: Transcription & Summary */}
                 <section className="dashboard-section results-section">
@@ -417,7 +456,7 @@ export default function DashboardPage() {
                     {/* Transcription Area */}
                     <Card className="dashboard-card results-card" style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                         <div className="card-header">
-                            <h2 className="jkl-heading-3">Transkripsjon</h2>
+                            <h2 className="jkl-heading-2">Transkripsjon</h2>
                             <div className="card-actions" style={{ display: 'flex', gap: '8px' }}>
                                 <TertiaryButton onClick={handleDownload} title="Last ned tekst">
                                     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -441,12 +480,9 @@ export default function DashboardPage() {
                             className="transcription-textarea"
                             value={transcriptionText}
                             onChange={(e) => setTranscriptionText(e.target.value)}
-                            placeholder="Her kommer transkripsjonen..."
+                            placeholder="Her kommer transkripsjonen av lydopptaket eller opplastet lydfil..."
                             style={{ flex: 1 }}
                         />
-                        <p className="jkl-small" style={{ marginTop: '8px', color: 'var(--jkl-color-text-subdued)' }}>
-                            Du kan redigere teksten her før du lager sammendrag.
-                        </p>
                     </Card>
                 </section>
 
@@ -456,7 +492,7 @@ export default function DashboardPage() {
 
                         {/* Header with Title and Dropdown */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '16px' }}>
-                            <h2 className="jkl-heading-2" style={{ margin: 0 }}>Sammendrag</h2>
+                            <h2 className="jkl-heading-2" style={{ margin: 0 }}>Prompt</h2>
                             <select
                                 className="jkl-select"
                                 value={selectedPromptKey}
@@ -502,14 +538,33 @@ export default function DashboardPage() {
 
                         {/* AI Response Area */}
                         <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                            <h3 className="jkl-heading-3" style={{ marginBottom: '12px' }}>
-                                Resultat
-                            </h3>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+                                <h2 className="jkl-heading-2" style={{ margin: 0 }}>
+                                    Resultat
+                                </h2>
+                                <div className="card-actions" style={{ display: 'flex', gap: '8px' }}>
+                                    <TertiaryButton onClick={handleDownloadSummary} disabled={!summaryResult} title="Last ned sammendrag">
+                                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                            <polyline points="7 10 12 15 17 10"></polyline>
+                                            <line x1="12" y1="15" x2="12" y2="3"></line>
+                                        </svg>
+                                    </TertiaryButton>
+                                    <TertiaryButton onClick={handleCopySummary} disabled={!summaryResult} title="Kopier sammendrag">
+                                        {summaryCopySuccess ? 'Kopiert!' : (
+                                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                            </svg>
+                                        )}
+                                    </TertiaryButton>
+                                </div>
+                            </div>
                             <TextArea
                                 className="transcription-textarea" // Re-use this class for consistency
                                 value={summaryResult}
                                 readOnly
-                                placeholder="Resultatet kommer her..."
+                                placeholder="Her kommer resultatet av AI-sammendraget med instruksjonen fra ovenfor..."
                                 style={{ flex: 1 }}
                             />
                         </div>

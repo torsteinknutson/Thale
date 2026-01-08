@@ -50,7 +50,7 @@ async def websocket_endpoint(websocket: WebSocket):
             await websocket.send_json({"status": "ready", "message": "Model loaded"})
         
         chunk_count = 0
-        TRANSCRIPTION_INTERVAL = 5  # Transcribe every 5 chunks (adjust based on chunk size)
+        TRANSCRIPTION_INTERVAL = 2  # Transcribe every 2 chunks (approx 2-3s) for faster subtitles
         
         while True:
             # Receive audio chunk
