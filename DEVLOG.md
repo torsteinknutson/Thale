@@ -310,3 +310,34 @@ frontend/
 ### Next Steps
 - 
 ```
+
+## Checkpoint 6: Dashboard Refinement & AI Features
+**Date**: 2026-01-08  
+**Commit**: (Pending)  
+**Phase**: Phase 3-4 Refinements
+
+### What Was Done
+- **Layout Overhaul**:
+  - Implemented a robust 3-column dashboard layout (Recording | Transcription | AI & RAG).
+  - Maximized screen real estate usage (100% width) for better visibility.
+  - Unified styling across all columns with consistent dark-themed content areas.
+
+- **AI Summarization & RAG**:
+  - Enhanced "Lag AI sammendrag" column with:
+    - Dropdown for predefined prompts (Møtereferat, Executive Summary, etc.).
+    - Fully editable prompt text area for custom instructions.
+    - Integration with AWS Bedrock (Claude Sonnet 4.5) via `nice-dev` profile.
+    - Increased max token output to 2000 for detailed responses.
+
+- **UI/UX Polish**:
+  - Fixed dark mode issues (white-on-white text in dropdowns).
+  - Stabilized text area behavior (prevented collapsing/color shifts on focus).
+  - Improved responsiveness and vertical spacing.
+
+### Key Decisions Made
+- **Prompt Engineering**: Pre-loaded "Møtereferat" and other templates to guide users but left them fully editable for flexibility.
+- **Bedrock Configuration**: Matched `DOKAI` settings exactly (same model ID, same AWS profile) to ensure consistent performance across tools.
+
+### Next Steps
+1. **Deployment Testing**: Verify AWS SSO login and Bedrock connection on the target machine.
+2. **User Feedback**: Gather feedback on the new prompt workflow.

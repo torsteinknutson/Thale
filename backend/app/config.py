@@ -32,7 +32,7 @@ class Settings(BaseSettings):
     
     # Bedrock
     bedrock_model_id: str = "eu.anthropic.claude-sonnet-4-5-20250929-v1:0"
-    bedrock_max_tokens: int = 1000
+    bedrock_max_tokens: int = 2000
     
     # File Upload
     max_upload_size_mb: int = 500

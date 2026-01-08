@@ -73,4 +73,3 @@ Internal use only - Fremtind Forsikring
 
 ---
 
-*Built with ❤️ for Fremtind Forsikring*
