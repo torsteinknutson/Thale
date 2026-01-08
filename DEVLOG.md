@@ -370,3 +370,20 @@ frontend/
 ### Next Steps
 1.  **Deploy**: Push changes to main for deployment on the AWS machine.
 2.  **User Testing**: Verify the 2s interval accuracy with the Norwegian model in a real meeting setting.
+
+## Checkpoint 8: Golden Ratio Layout
+**Date**: 2026-01-08  
+**Phase**: Phase 4 Polish
+
+### What Was Done
+- **Main Grid Layout**:
+  - Adjusted column ratio to **1 : 1.618** (Golden Ratio).
+  - Transcription Column is now ~38% width.
+  - AI/Prompt Column is now ~62% width.
+  
+- **AI Section Vertical Layout**:
+  - Applied Golden Ratio to the vertical split between the Prompt area and the Result area.
+  - Prompt Area: 
+  - Result Area: 
+
+This creates a more harmonious and visually balanced interface where the primary output (AI Results) gets the most focus.

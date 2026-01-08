@@ -514,14 +514,19 @@ export default function DashboardPage() {
                             </select>
                         </div>
 
-                        {/* Editable Prompt */}
-                        <div style={{ marginBottom: '24px' }}>
+                        {/* Editable Prompt (Golden Ratio Part A - Smaller) */}
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginBottom: '24px', minHeight: '150px' }}>
                             <TextArea
-                                className="transcription-textarea" // Re-use this class for consistency
+                                className="transcription-textarea"
                                 value={customPromptText}
                                 onChange={(e) => setCustomPromptText(e.target.value)}
-                                rows={12}
-                                style={{ fontSize: '0.9rem', fontFamily: 'monospace', resize: 'vertical', minHeight: '250px' }}
+                                style={{
+                                    fontSize: '0.9rem',
+                                    fontFamily: 'monospace',
+                                    resize: 'none',
+                                    height: '100%',
+                                    minHeight: '0'
+                                }}
                             />
                         </div>
 
@@ -536,8 +541,8 @@ export default function DashboardPage() {
                             </PrimaryButton>
                         </div>
 
-                        {/* AI Response Area */}
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                        {/* AI Response Area (Golden Ratio Part B - Larger) */}
+                        <div style={{ flex: 1.618, display: 'flex', flexDirection: 'column', minHeight: '200px' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                                 <h2 className="jkl-heading-2" style={{ margin: 0 }}>
                                     Resultat
@@ -561,11 +566,11 @@ export default function DashboardPage() {
                                 </div>
                             </div>
                             <TextArea
-                                className="transcription-textarea" // Re-use this class for consistency
+                                className="transcription-textarea"
                                 value={summaryResult}
                                 readOnly
                                 placeholder="Her kommer resultatet av AI-sammendraget med instruksjonen fra ovenfor..."
-                                style={{ flex: 1 }}
+                                style={{ flex: 1, resize: 'none', height: '100%', minHeight: '0' }}
                             />
                         </div>
                     </Card>

@@ -308,7 +308,8 @@ body {
 
 .dashboard-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 1fr 1.618fr;
+  /* Golden Ratio */
   gap: 24px;
   align-items: stretch;
 }
