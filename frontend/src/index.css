@@ -309,7 +309,7 @@ body {
 .dashboard-grid {
   display: grid;
   grid-template-columns: 1fr 1.618fr;
-  /* Golden Ratio */
+  /* Restore Golden Ratio for width */
   gap: 24px;
   align-items: stretch;
 }
@@ -476,6 +476,8 @@ body {
 .transcription-textarea textarea {
   line-height: 1.7;
   font-size: 1.125rem;
+  font-family: "Fremtind Grotesk", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  /* Force consistency */
   resize: vertical;
   min-height: 65vh;
   border: 1px solid #e0e0e0;
@@ -490,7 +492,6 @@ body {
   border-color: #2b2b2c;
   box-shadow: 0 0 0 2px rgba(43, 43, 44, 0.1);
   outline: none;
-  min-height: 65vh !important;
 }
 
 .card-header {
@@ -603,4 +604,22 @@ body {
 
 [data-theme="dark"] .stop-icon {
   background: #2b2b2c;
+}
+
+/* Custom Scrollbar for Dark Mode */
+[data-theme="dark"] ::-webkit-scrollbar {
+  width: 10px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: var(--jkl-color-background-container);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: var(--jkl-color-border-separator);
+  border-radius: 5px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: var(--jkl-color-text-subdued);
 }

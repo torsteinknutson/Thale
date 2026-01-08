@@ -514,35 +514,56 @@ export default function DashboardPage() {
                             </select>
                         </div>
 
-                        {/* Editable Prompt (Golden Ratio Part A - Smaller) */}
-                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', marginBottom: '24px', minHeight: '150px' }}>
+                        {/* Editable Prompt */}
+                        <div style={{ display: 'flex', flexDirection: 'column', marginBottom: '16px' }}>
                             <TextArea
                                 className="transcription-textarea"
                                 value={customPromptText}
                                 onChange={(e) => setCustomPromptText(e.target.value)}
                                 style={{
-                                    fontSize: '0.9rem',
-                                    fontFamily: 'monospace',
-                                    resize: 'none',
-                                    height: '100%',
-                                    minHeight: '0'
+                                    resize: 'vertical',
+                                    minHeight: '160px', // Slightly larger start
+                                    border: '1px solid var(--jkl-color-border-input)',
+                                    color: 'var(--jkl-color-text-subdued)',
+                                    overflowY: 'auto' // Allow scrolling naturally
                                 }}
                             />
                         </div>
 
-                        {/* Action Button */}
-                        <div style={{ marginBottom: '24px' }}>
-                            <PrimaryButton
+                        {/* Action Button (Compact Play Style) */}
+                        <div style={{ marginBottom: '16px', display: 'flex', justifyContent: 'center' }}>
+                            <button
                                 onClick={handleGenerateSummary}
                                 disabled={!transcriptionText || isSummarizing}
-                                style={{ width: '100%' }}
+                                title="Generer svar"
+                                style={{
+                                    width: '56px',
+                                    height: '56px',
+                                    borderRadius: '50%',
+                                    border: 'none',
+                                    background: 'var(--jkl-color-background-action)',
+                                    color: 'var(--jkl-color-text-on-action)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.2s',
+                                    boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                    zIndex: 10
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                                onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
                             >
-                                {isSummarizing ? <Loader /> : '✨ Generer svar med Bedrock'}
-                            </PrimaryButton>
+                                {isSummarizing ? <Loader variant="small" /> : (
+                                    <svg width="32" height="32" viewBox="0 0 24 24" fill="currentColor">
+                                        <path d="M8 5v14l11-7z" />
+                                    </svg>
+                                )}
+                            </button>
                         </div>
 
-                        {/* AI Response Area (Golden Ratio Part B - Larger) */}
-                        <div style={{ flex: 1.618, display: 'flex', flexDirection: 'column', minHeight: '200px' }}>
+                        {/* AI Response Area */}
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
                                 <h2 className="jkl-heading-2" style={{ margin: 0 }}>
                                     Resultat
@@ -570,7 +591,7 @@ export default function DashboardPage() {
                                 value={summaryResult}
                                 readOnly
                                 placeholder="Her kommer resultatet av AI-sammendraget med instruksjonen fra ovenfor..."
-                                style={{ flex: 1, resize: 'none', height: '100%', minHeight: '0' }}
+                                style={{ flex: 1, resize: 'vertical', minHeight: '400px' }}
                             />
                         </div>
                     </Card>

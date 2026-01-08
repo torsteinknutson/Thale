@@ -387,3 +387,22 @@ frontend/
   - Result Area: 
 
 This creates a more harmonious and visually balanced interface where the primary output (AI Results) gets the most focus.
+
+## Checkpoint 9: Final UI Polish & Layout Tuning
+**Date**: 2026-01-08  
+**Phase**: Phase 4 Polish
+
+### What Was Done
+- **Layout & Geometry**:
+  - Restored **Golden Ratio (1 : 1.618)** for the main dashboard columns (Transcription vs AI).
+  - Adjusted vertical spacing and sizing for the AI Card key elements (Prompt vs Result).
+  
+- **Component Refinements**:
+  - **Prompt Area**: Optimized size (~160px height), simplified font styling to match the rest of the app, and ensured scroll behavior is natural.
+  - **Action Button**: Replaced the large text button with a sleek, centered **Play Icon** button to save vertical space.
+  - **Dark Mode**: Implemented custom, dark-themed **Scrollbars** (via `::-webkit-scrollbar`) to remove the jarring white browser default bars.
+
+- **CSS Cleanup**:
+  - Removed rigid global `min-height` constraints on textareas to allow for more flexible, component-specific sizing overrides.
+
+This state represents a highly polished, visually consistent ("Fremtind Grotesk" everywhere), and responsive interface ready for end-user testing.
