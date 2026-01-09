@@ -6,11 +6,11 @@ A browser-based application for transcribing meeting recordings using OpenAI's W
 
 ## Features
 
-- 📤 **File Upload**: Upload audio files (.m4a, .wav, .mp3, etc.) for transcription
-- 🎙️ **Live Recording**: Record audio directly in the browser with real-time transcription
-- 🤖 **AI Summarization**: Generate meeting summaries using AWS Bedrock (Claude)
-- 🌐 **Web-Based**: No software installation required - runs entirely in the browser
-- 🎨 **Fremtind Design**: Built with the [Jøkul Design System](https://jokul.fremtind.no/)
+- **File Upload**: Upload audio files (.m4a, .wav, .mp3, etc.) for transcription
+- **Live Recording**: Record audio directly in the browser
+- **AI Summarization**: Generate meeting summaries using AWS Bedrock (Claude)
+- **Web-Based**: No software installation required - runs entirely in the browser
+- **Fremtind Design**: Built with the [Jøkul Design System](https://jokul.fremtind.no/)
 
 ## Tech Stack
 
@@ -60,7 +60,7 @@ A browser-based application for transcribing meeting recordings using OpenAI's W
 
 #### Windows (Corporate Environment)
 
-> **Note**: Windows setup uses global Python packages and esbuild-wasm for compatibility with corporate security policies.
+> **Note**: Windows setup uses esbuild-wasm for compatibility with corporate security policies.
 
 1. **Clone the repository**
    ```powershell
@@ -71,6 +71,7 @@ A browser-based application for transcribing meeting recordings using OpenAI's W
 2. **Backend setup**
    ```powershell
    # Install dependencies
+   create venv
    pip install -r backend/requirements.txt
    
    # Start backend server
@@ -98,15 +99,15 @@ A browser-based application for transcribing meeting recordings using OpenAI's W
 - [Implementation Plan](./IMPLEMENTATION_PLAN.md) - Detailed development roadmap
 - [Development Log](./DEVLOG.md) - Chronological development checkpoints
 - [Setup Guide](./docs/SETUP.md) - Local development setup (Linux)
-- Windows Setup - See above Quick Start section
+- [Windows Setup] - See above Quick Start section
 - [Deployment Guide](./docs/DEPLOYMENT.md) - AWS deployment *(coming soon)*
 - [API Documentation](./docs/API.md) - REST API reference *(coming soon)*
 
 ## Project Status
 
-✅ **Core Features Functional** - Live transcription, file upload, and AI summarization working  
-🚧 **In Progress** - AWS deployment and production optimization  
-📝 See [DEVLOG.md](./DEVLOG.md) for detailed progress and [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for roadmap.
+**Core Features Functional** - Live transcription, file upload, and AI summarization working  
+**In Progress** - AWS deployment and production optimization  
+See [DEVLOG.md](./DEVLOG.md) for detailed progress
 
 ## License
 
