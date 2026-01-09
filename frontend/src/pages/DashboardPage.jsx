@@ -197,7 +197,7 @@ export default function DashboardPage() {
         setError(null)
 
         try {
-            const response = await fetch('/api/summarize', {
+            const response = await fetch('/api/summarization/', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
