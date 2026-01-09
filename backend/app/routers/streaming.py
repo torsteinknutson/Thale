@@ -46,8 +46,27 @@ async def websocket_endpoint(websocket: WebSocket):
         if not whisper.is_loaded:
             await websocket.send_json({"status": "loading_model", "message": "Loading Whisper model..."})
             # Run load in executor to not block
-            await asyncio.get_event_loop().run_in_executor(None, whisper.load_model)
-            await websocket.send_json({"status": "ready", "message": "Model loaded"})
+            try:
+                await asyncio.get_event_loop().run_in_executor(None, whisper.load_model)
+                
+                # Check if load was successful
+                if not whisper.is_loaded:
+                    await websocket.send_json({
+                        "status": "error",
+                        "message": "Whisper-modellen kunne ikke lastes. Live transkripsjon er ikke tilgjengelig. Sjå server-logger for detaljer."
+                    })
+                    await websocket.close()
+                    return
+                    
+                await websocket.send_json({"status": "ready", "message": "Model loaded"})
+            except Exception as e:
+                logger.error(f"Failed to load model in websocket: {e}")
+                await websocket.send_json({
+                    "status": "error",
+                    "message": "Kunne ikke laste Whisper-modell. Live transkripsjon er ikke tilgjengelig."
+                })
+                await websocket.close()
+                return
         
         chunk_count = 0
         TRANSCRIPTION_INTERVAL = 2  # Transcribe every 2 chunks (approx 2-3s) for faster subtitles

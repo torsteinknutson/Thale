@@ -6,6 +6,7 @@ export function AudioVisualizer({ stream, isRecording, width = 300, height = 60 
     const analyserRef = useRef(null)
     const sourceRef = useRef(null)
     const audioContextRef = useRef(null)
+    const smoothedDataRef = useRef(null)
 
     useEffect(() => {
         if (!stream || !canvasRef.current || !isRecording) {
@@ -28,7 +29,8 @@ export function AudioVisualizer({ stream, isRecording, width = 300, height = 60 
         // Create analyser
         if (!analyserRef.current) {
             const analyser = audioContext.createAnalyser()
-            analyser.fftSize = 64 // Lower FFT size for fewer, wider bars
+            analyser.fftSize = 128 // Increased for more bars
+            analyser.smoothingTimeConstant = 0.8 // Smooth out rapid changes
             analyserRef.current = analyser
         }
         const analyser = analyserRef.current
@@ -45,33 +47,46 @@ export function AudioVisualizer({ stream, isRecording, width = 300, height = 60 
         const canvasCtx = canvas.getContext('2d')
         const bufferLength = analyser.frequencyBinCount
         const dataArray = new Uint8Array(bufferLength)
+        
+        // Initialize smoothed data array for interpolation
+        if (!smoothedDataRef.current) {
+            smoothedDataRef.current = new Array(bufferLength).fill(0)
+        }
+        const smoothedData = smoothedDataRef.current
 
         const draw = () => {
             animationRef.current = requestAnimationFrame(draw)
             analyser.getByteFrequencyData(dataArray)
 
-            // Clear canvas
+            // Clear canvas completely (transparent background)
             canvasCtx.clearRect(0, 0, canvas.width, canvas.height)
 
-            const barWidth = (canvas.width / bufferLength) * 2.5
-            let barHeight
-            let x = 0
+            const barCount = Math.min(32, bufferLength)
+            const barWidth = (canvas.width / barCount) * 0.7 // 70% width, 30% gap
+            const gap = (canvas.width / barCount) * 0.3
 
-            for (let i = 0; i < bufferLength; i++) {
-                barHeight = dataArray[i] / 2 // Scale down height
+            for (let i = 0; i < barCount; i++) {
+                // Sample from lower 70% of frequency range (skip highest frequencies)
+                const dataIndex = Math.floor((i / barCount) * bufferLength * 0.7)
+                const rawValue = dataArray[dataIndex]
+                
+                // Smooth the data for fluid animation
+                smoothedData[i] = smoothedData[i] * 0.7 + rawValue * 0.3
+                
+                const normalizedHeight = (smoothedData[i] / 255) * canvas.height * 0.9
+                const barHeight = Math.max(2, normalizedHeight) // Minimum height of 2px
+                
+                const x = i * (barWidth + gap) + gap / 2
+                const y = canvas.height - barHeight
 
-                // Gradient color based on height/intensity
-                // Using Jøkul-like colors (blue to purple)
-                const r = barHeight + 25 * (i / bufferLength)
-                const g = 50
-                const b = 200
+                // Simple solid teal color - minimalistic
+                canvasCtx.fillStyle = 'rgba(0, 150, 160, 0.8)'
 
-                canvasCtx.fillStyle = `rgb(${r},${g},${b})`
-
-                // Draw rounded bars? For now simple rects
-                canvasCtx.fillRect(x, canvas.height - barHeight, barWidth, barHeight)
-
-                x += barWidth + 1
+                // Draw rounded rectangle
+                const radius = Math.min(barWidth / 2, 3)
+                canvasCtx.beginPath()
+                canvasCtx.roundRect(x, y, barWidth, barHeight, [radius, radius, 0, 0])
+                canvasCtx.fill()
             }
         }
 
@@ -79,7 +94,6 @@ export function AudioVisualizer({ stream, isRecording, width = 300, height = 60 
 
         return () => {
             if (animationRef.current) cancelAnimationFrame(animationRef.current)
-            // Don't close audio context here as it might be reused, or close it on unmount
         }
     }, [stream, isRecording])
 
@@ -94,3 +108,4 @@ export function AudioVisualizer({ stream, isRecording, width = 300, height = 60 
 
     return <canvas ref={canvasRef} width={width} height={height} className="audio-visualizer" style={{ width: '100%', maxWidth: `${width}px` }} />
 }
+

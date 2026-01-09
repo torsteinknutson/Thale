@@ -10,4 +10,9 @@ I want to be able to have this application live in a github repo and be able to 
 I also want to document the process of this app being built and deployed to AWS so that I can copy this process to other apps in the future.
 
 
-Docker-image
+______________________________
+
+
+Lets now add an important idea that I will develop later, perhaps to the implementation plan and the readme. 
+
+What I eventually want is for users in the Fremtind organization to be able to log in using the IAM service we have with AWS, so that they are uniquely identifyed. This will make it possible to offer indiviual storage and handling of private recordings. What I am sure of is that every day there are 1-hour to 2 hour meetings that all have important information about the daily workings and development of this company. the knowledge that is created, and can be put into a system, especially if the data is at the least semi-curated by individuals, enabled by Thales capabilities, will  then create "summaries" that can be used in for instance a knowledge base or a RAG system. So - i think users can choose themselves to record sessions with for instance a colleague or a leader showing them something and then be able as a logged in user to further push that new knowledge to either a private knowledgebase, a common one or both

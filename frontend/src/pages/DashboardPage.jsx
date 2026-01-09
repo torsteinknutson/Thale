@@ -207,6 +207,15 @@ export default function DashboardPage() {
         }
     }
 
+    // Save Recording Handler (keep file on server, clear UI for new recording)
+    const handleSaveRecording = () => {
+        // Clear local state but keep file on server
+        clearRecording()
+        setIsPlaying(false)
+        setPlaybackTime(0)
+        setDuration(0)
+    }
+
     // Reset Handler
     const handleResetSession = async () => {
         if (!window.confirm('Er du sikker på at du vil starte en ny sesjon? Dette sletter opptaket.')) {
@@ -532,8 +541,14 @@ export default function DashboardPage() {
                         <button
                             className={`record-btn-large ${isRecording ? (isPaused ? 'recording-button--paused' : 'recording-button--recording') : ''}`}
                             onClick={isRecording ? (isPaused ? resumeRecording : pauseRecording) : handleStartRecording}
-                            title={isRecording ? (isPaused ? "Fortsett opptak" : "Pause opptak") : "Start opptak (Fortsetter på eksisterende)"}
-                            style={{ width: '80px', height: '80px' }}
+                            disabled={!isRecording && audioBlob !== null}
+                            title={audioBlob && !isRecording ? "Slett eksisterende opptak for å starte nytt" : (isRecording ? (isPaused ? "Fortsett opptak" : "Pause opptak") : "Start opptak")}
+                            style={{ 
+                                width: '80px', 
+                                height: '80px',
+                                opacity: (!isRecording && audioBlob) ? 0.5 : 1,
+                                cursor: (!isRecording && audioBlob) ? 'not-allowed' : 'pointer'
+                            }}
                         >
                             {isRecording && !isPaused ? (
                                 <div className="pause-icon" style={{ width: '24px', height: '24px', display: 'flex', gap: '6px', justifyContent: 'center' }}>
@@ -604,7 +619,7 @@ export default function DashboardPage() {
                         opacity: isRecording && isLiveMode ? 1 : 0,
                         transition: 'opacity 0.3s'
                     }}>
-                        {transcriptionText.slice(-60) || (isRecording && isLiveMode ? "Lyttet..." : "")}
+                        {transcriptionText.slice(-60)}
                     </div>
                 </div>
 
@@ -617,6 +632,13 @@ export default function DashboardPage() {
                             <PrimaryButton onClick={handleTranscribeFile} disabled={isTranscribing}>
                                 {isTranscribing ? <Loader /> : 'Transkriber opptak'}
                             </PrimaryButton>
+                            
+                            <SecondaryButton 
+                                onClick={handleSaveRecording} 
+                                disabled={isTranscribing}
+                            >
+                                Lagre opptak
+                            </SecondaryButton>
                             
                             <SecondaryButton 
                                 onClick={handleDeleteRecording} 

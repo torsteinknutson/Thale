@@ -511,6 +511,72 @@ jobs:
 
 ---
 
+## 13. Future Roadmap: Organizational Knowledge Management
+
+### Vision: Enterprise Knowledge Capture & Curation
+
+Thale is positioned to become a critical knowledge management tool for Fremtind, capturing institutional knowledge from daily meetings and enabling both individual and organizational learning.
+
+#### Phase 1: User Authentication & Individual Storage
+**Goal**: Enable secure, personalized recording management
+
+**Key Features**:
+- **AWS IAM Integration**: Authenticate users via Fremtind's AWS IAM service
+- **Unique User Identification**: Each user has a secure, individual workspace
+- **Private Recording Storage**: Personal recordings stored separately from shared content
+- **User-specific Settings**: Personalized preferences, prompts, and configurations
+
+**Technical Implementation**:
+- AWS Cognito or IAM-based authentication
+- S3 bucket structure: `s3://thale-recordings/{user-id}/private/`
+- User profile database (DynamoDB or RDS)
+- Session management with JWT tokens
+
+#### Phase 2: Knowledge Base Integration
+**Goal**: Transform meeting recordings into searchable, actionable knowledge
+
+**Key Features**:
+- **Semi-Curated Knowledge**: Users review and refine AI-generated summaries
+- **Dual Storage Options**:
+  - **Private Knowledge Base**: Personal notes and recordings (individual access)
+  - **Shared Knowledge Base**: Team/organizational knowledge (group access)
+  - **Hybrid Mode**: Users can promote private content to shared
+- **RAG System Integration**: Summaries become searchable in a vector database
+- **Knowledge Tagging**: Categorize by project, topic, team, or custom tags
+
+**Use Cases**:
+1. **Onboarding Sessions**: Record 1:1 mentoring sessions, curate knowledge for future employees
+2. **Technical Demonstrations**: Capture expert knowledge from "show-and-tell" sessions
+3. **Daily Standups**: Extract action items and decisions from recurring meetings
+4. **Strategic Discussions**: Preserve context and reasoning behind key decisions
+
+**Technical Implementation**:
+- Vector database (Pinecone, Weaviate, or AWS OpenSearch)
+- Embedding generation (AWS Bedrock or OpenAI)
+- Metadata tagging system
+- Search and retrieval API
+- ACL for shared vs. private content
+
+#### Phase 3: Organizational Intelligence
+**Goal**: Create a living knowledge repository for Fremtind
+
+**Features**:
+- **Knowledge Discovery**: Search across all shared recordings by topic/keyword
+- **Trend Analysis**: Identify recurring themes in organizational discussions
+- **Decision Tracking**: Link recordings to project milestones and outcomes
+- **Cross-Team Learning**: Share best practices across departments
+- **Compliance & Audit**: Retain meeting records for regulatory requirements
+
+**Impact**:
+- **Preserve Institutional Knowledge**: 1-2 hour meetings contain critical insights that currently disappear
+- **Accelerate Onboarding**: New employees access curated knowledge from past discussions
+- **Improve Decision Quality**: Historical context available when making similar decisions
+- **Enable Remote Collaboration**: Async access to meeting content for distributed teams
+
+**Timeline**: Post-MVP (6-12 months after initial deployment)
+
+---
+
 ## Next Steps
 
 1. **Review this plan** - Confirm technology choices and scope

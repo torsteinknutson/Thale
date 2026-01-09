@@ -17,6 +17,12 @@ export function useAudioRecorder() {
     const audioChunksRef = useRef([])
     const streamRef = useRef(null)
     const timerRef = useRef(null)
+    const recordingTimeRef = useRef(0)
+
+    // Keep ref in sync with state
+    useEffect(() => {
+        recordingTimeRef.current = recordingTime
+    }, [recordingTime])
 
     // Cleanup on unmount
     useEffect(() => {
@@ -56,10 +62,11 @@ export function useAudioRecorder() {
         }
     }
 
-    const saveRecording = async (blob) => {
+    const saveRecording = async (blob, durationSeconds) => {
         try {
             const formData = new FormData()
             formData.append('file', blob, 'recording.webm')
+            formData.append('duration_seconds', durationSeconds.toString())
 
             const response = await fetch('/api/transcription/recording/save', {
                 method: 'POST',
@@ -70,7 +77,7 @@ export function useAudioRecorder() {
                 const data = await response.json()
                 setRecordingId(data.recording_id)
                 localStorage.setItem('thale_current_recording_id', data.recording_id)
-                console.log('💾 Saved recording to server:', data.recording_id)
+                console.log('💾 Saved recording to server:', data.filename)
             } else {
                 console.error('Failed to save recording to server')
                 setError('Kunne ikke lagre opptak på server. Opptaket finnes kun i minnet.')
@@ -156,8 +163,8 @@ export function useAudioRecorder() {
                 const blob = new Blob(audioChunksRef.current, { type: mimeType })
                 setAudioBlob(blob)
                 
-                // Auto-save recording to backend
-                saveRecording(blob)
+                // Auto-save recording to backend with duration (use ref for current value)
+                saveRecording(blob, recordingTimeRef.current)
 
                 // Clean up stream
                 if (streamRef.current) {

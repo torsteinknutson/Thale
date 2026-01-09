@@ -261,7 +261,10 @@ async def get_transcription(transcription_id: str):
 # ==================== Recording Persistence Endpoints ====================
 
 @router.post("/recording/save")
-async def save_recording(file: UploadFile = File(...)):
+async def save_recording(
+    file: UploadFile = File(...),
+    duration_seconds: int = Form(default=0, description="Recording duration in seconds")
+):
     """
     Save an audio recording to persistent storage.
     
@@ -283,19 +286,29 @@ async def save_recording(file: UploadFile = File(...)):
             if file_ext in settings.allowed_extensions_list:
                 ext = file_ext
         
-        # Save file
-        file_path = recordings_path / f"{recording_id}{ext}"
-        content = await file.read()
+        # Create timestamp and format duration (using local time)
+        timestamp = datetime.now().strftime("%d-%m-%y__%H-%M-%S")
+        hours = duration_seconds // 3600
+        minutes = (duration_seconds % 3600) // 60
+        seconds = duration_seconds % 60
+        duration_str = f"{hours:02d}-{minutes:02d}-{seconds:02d}"
         
+        # Create intuitive filename: thale_DD-MM-YY__HH-MM-SS____HH-MM-SS__shortuuid.webm
+        # UUID ensures uniqueness even if recording twice in same second with same duration
+        filename = f"thale_{timestamp}____{duration_str}__{recording_id[:8]}{ext}"
+        file_path = recordings_path / filename
+        
+        # Save file
+        content = await file.read()
         with open(file_path, "wb") as f:
             f.write(content)
         
         file_size_mb = len(content) / (1024 * 1024)
-        logger.info(f"💾 Saved recording: {recording_id}{ext} ({file_size_mb:.2f} MB)")
+        logger.info(f"💾 Saved recording: {filename} ({file_size_mb:.2f} MB)")
         
         return {
             "recording_id": recording_id,
-            "filename": f"{recording_id}{ext}",
+            "filename": filename,
             "size_mb": round(file_size_mb, 2)
         }
         
@@ -315,9 +328,19 @@ async def get_recording(recording_id: str):
     Returns the audio file for playback or transcription.
     """
     try:
-        # Find the recording file (check all allowed extensions)
         recordings_path = Path(settings.recordings_dir)
         
+        # Search for file containing the recording ID (handles both old UUID-only and new timestamped formats)
+        for file_path in recordings_path.glob(f"*{recording_id[:8]}*"):
+            if file_path.is_file():
+                logger.info(f"📁 Retrieved recording: {file_path.name}")
+                return FileResponse(
+                    path=str(file_path),
+                    media_type="audio/webm",
+                    filename=file_path.name
+                )
+        
+        # Fallback: try old format with full UUID
         for ext in settings.allowed_extensions_list:
             file_path = recordings_path / f"{recording_id}{ext}"
             if file_path.exists():
@@ -351,14 +374,23 @@ async def delete_recording(recording_id: str):
         recordings_path = Path(settings.recordings_dir)
         deleted = False
         
-        # Check all possible extensions and delete if found
-        for ext in settings.allowed_extensions_list:
-            file_path = recordings_path / f"{recording_id}{ext}"
-            if file_path.exists():
+        # Search for file containing the recording ID (handles both old and new formats)
+        for file_path in recordings_path.glob(f"*{recording_id[:8]}*"):
+            if file_path.is_file():
                 os.remove(file_path)
                 deleted = True
-                logger.info(f"🗑️  Deleted recording: {recording_id}{ext}")
+                logger.info(f"🗑️  Deleted recording: {file_path.name}")
                 break
+        
+        # Fallback: try old format with full UUID
+        if not deleted:
+            for ext in settings.allowed_extensions_list:
+                file_path = recordings_path / f"{recording_id}{ext}"
+                if file_path.exists():
+                    os.remove(file_path)
+                    deleted = True
+                    logger.info(f"🗑️  Deleted recording: {recording_id}{ext}")
+                    break
         
         if not deleted:
             raise HTTPException(status_code=404, detail="Recording not found")

@@ -13,10 +13,11 @@ from datetime import timedelta
 from typing import Optional, Callable, AsyncGenerator
 from dataclasses import dataclass
 
-# Suppress verbose warnings from transformers
+# Suppress verbose warnings from transformers and huggingface_hub
 warnings.filterwarnings("ignore")
 os.environ['TRANSFORMERS_NO_ADVISORY_WARNINGS'] = '1'
 os.environ['TRANSFORMERS_VERBOSITY'] = 'error'
+os.environ['HF_HUB_VERBOSITY'] = 'error'
 
 import numpy as np
 
@@ -86,26 +87,53 @@ class WhisperService:
             logger.info("Model already loaded")
             return
         
-        import torch
-        from transformers import WhisperProcessor, WhisperForConditionalGeneration
-        import transformers.utils.logging as transformers_logging
-        transformers_logging.set_verbosity_error()
-        
-        logger.info(f"🔊 Loading Whisper model: {self.model_id}")
-        
-        # Setup device (GPU if available, otherwise CPU)
-        self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-        logger.info(f"🖥️  Using device: {self._device}")
-        
-        if torch.cuda.is_available():
-            logger.info(f"   GPU: {torch.cuda.get_device_name(0)}")
-        
-        # Load model and processor
-        self._processor = WhisperProcessor.from_pretrained(self.model_id)
-        self._model = WhisperForConditionalGeneration.from_pretrained(self.model_id).to(self._device)
-        
-        self._is_loaded = True
-        logger.info("✅ Whisper model loaded successfully")
+        try:
+            import torch
+            from transformers import WhisperProcessor, WhisperForConditionalGeneration
+            import transformers.utils.logging as transformers_logging
+            transformers_logging.set_verbosity_error()
+            
+            # Suppress huggingface_hub logging
+            import huggingface_hub
+            huggingface_hub.utils.logging.set_verbosity_error()
+            
+            logger.info(f"🔊 Loading Whisper model: {self.model_id}")
+            
+            # Setup device (GPU if available, otherwise CPU)
+            self._device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+            logger.info(f"🖥️  Using device: {self._device}")
+            
+            if torch.cuda.is_available():
+                logger.info(f"   GPU: {torch.cuda.get_device_name(0)}")
+            
+            # Load model and processor with reduced retry attempts
+            self._processor = WhisperProcessor.from_pretrained(
+                self.model_id,
+                local_files_only=False,
+                resume_download=True
+            )
+            self._model = WhisperForConditionalGeneration.from_pretrained(
+                self.model_id,
+                local_files_only=False,
+                resume_download=True
+            ).to(self._device)
+            
+            self._is_loaded = True
+            logger.info("✅ Whisper model loaded successfully")
+            
+        except Exception as e:
+            error_msg = str(e)
+            if "SSL" in error_msg or "certificate" in error_msg.lower():
+                logger.error("❌ Failed to load Whisper model: SSL certificate error (corporate network/proxy)")
+                logger.error("   Live transcription will be unavailable. File-based transcription may still work if model is cached.")
+            elif "Max retries" in error_msg or "Connection" in error_msg:
+                logger.error("❌ Failed to load Whisper model: Network connection error")
+                logger.error("   Cannot reach HuggingFace. Live transcription will be unavailable.")
+            else:
+                logger.error(f"❌ Failed to load Whisper model: {error_msg}")
+            
+            self._is_loaded = False
+            # Don't re-raise - let the app start but disable transcription features
     
     def unload_model(self) -> None:
         """Unload the model to free memory."""
@@ -148,6 +176,14 @@ class WhisperService:
         # Ensure model is loaded
         if not self._is_loaded:
             self.load_model()
+            
+            # If still not loaded after attempt, fail gracefully
+            if not self._is_loaded:
+                raise RuntimeError(
+                    "Whisper-modellen er ikke tilgjengelig. "
+                    "Dette kan skyldes nettverksproblemer eller manglende modell-cache. "
+                    "Sjå server-logger for detaljer."
+                )
         
         audio_path = Path(file_path)
         if not audio_path.exists():

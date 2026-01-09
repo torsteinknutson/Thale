@@ -493,4 +493,101 @@ The dashboard now offers a robust "Record -> Pause/Stop -> Review -> Continue" w
 
 The app now provides enterprise-ready recording persistence while maintaining development simplicity with a single-session workflow.
 
-```
+---
+
+## Checkpoint 12: Recording Management & Production Refinements
+**Date**: 2026-01-09
+**Phase**: Phase 4 Polish & Production Readiness
+
+### What Was Done
+
+#### Recording File Management Improvements
+- **Intuitive Filename Format**:
+  - Changed from UUID-only to timestamped format: `thale_DD-MM-YY__HH-MM-SS____HH-MM-SS__uuid8.webm`
+  - Format shows: date, time of recording, duration (hours-minutes-seconds), and unique identifier
+  - Example: `thale_09-01-26__21-31-24____00-15-42__67f1623f.webm` (recorded Jan 9, 2026 at 21:31, 15min 42sec duration)
+  - Fixed timezone issue: Now uses local time instead of UTC
+  - Fixed duration tracking: Added `recordingTimeRef` to capture actual recording duration instead of stale closure value
+
+- **Recording Workflow Enhancement**:
+  - Implemented single-recording-per-session policy: Record button disabled after stopping until user takes action
+  - Added **"Lagre opptak"** button alongside delete button:
+    - Saves recording to server and clears UI for new recording
+    - Allows accumulating multiple recordings in a session without deleting previous ones
+  - "Slett opptak" button deletes file from server
+  - Clear visual feedback with disabled button state and helpful tooltip
+
+#### Backend Logging & Error Handling
+- **Simplified Log Format**:
+  - Removed timestamp and logger name from log output to reduce clutter
+  - Format changed from `2026-01-09 20:44:43,087 - backend.app.main - INFO - ...` to `INFO - ...`
+  - Cleaner console output for development
+
+- **Graceful Model Loading Errors**:
+  - Added comprehensive error handling for Whisper model loading failures
+  - Catches SSL/certificate errors (common in corporate networks with proxies)
+  - Catches network connection errors when HuggingFace is unreachable
+  - App starts successfully even without model, showing clear error messages instead of crashing
+  - Suppressed HuggingFace retry spam in logs (set `HF_HUB_VERBOSITY=error`)
+  - WebSocket endpoint sends error message to frontend if model unavailable
+  - Transcription endpoint provides user-friendly Norwegian error messages
+
+#### UI/UX Refinements
+- **Audio Visualizer Redesign**:
+  - Minimalistic design with transparent background (bars only, no container)
+  - Solid teal color (`rgba(0, 150, 160, 0.8)`) consistent with Jøkul design system
+  - Focused on lower 70% of frequency range to exclude inactive high frequencies
+  - All bars now active and responsive to voice/audio
+  - Smooth animations with interpolation for fluid motion
+  - Rounded top corners on bars for modern aesthetic
+
+- **Removed Clutter**:
+  - Removed "Lyttet..." placeholder text under visualizer
+  - Cleaner interface showing only relevant information
+
+#### Documentation Updates
+- **Future Vision Documentation**:
+  - Added comprehensive "Organizational Knowledge Management" roadmap to IMPLEMENTATION_PLAN.md
+  - Added "Future Vision" section to README.md
+  - Documented 3-phase evolution plan:
+    - Phase 1: AWS IAM authentication + individual user storage
+    - Phase 2: Knowledge base integration with RAG system (private/shared)
+    - Phase 3: Organizational intelligence and cross-team learning
+  - Use cases: onboarding sessions, technical demos, decision tracking, institutional knowledge preservation
+  - Timeline: Post-MVP (6-12 months)
+
+### Key Decisions Made
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Filename Format | Date + Time + Duration + UUID | Human-readable, sortable, self-documenting, unique |
+| Recording Workflow | Single-record-per-session with save option | Prevents accidental multiple recordings, allows intentional accumulation |
+| Time Display | Local time (not UTC) | Matches user's actual environment |
+| Duration Tracking | Ref-based (not closure) | Ensures accurate duration capture at stop event |
+| Model Loading Errors | Graceful degradation | App remains usable for file uploads even without live transcription |
+| Visualizer Design | Minimalistic, frequency-focused | Clean aesthetic, removes visual noise, all bars active |
+| Log Format | Simple (level + message only) | Reduces console clutter during development |
+
+### Technical Improvements
+- **Duration Bug Fix**: `recordingTimeRef` now syncs with state via `useEffect`, ensuring `onstop` handler gets current value
+- **Timezone Fix**: Backend uses `datetime.now()` instead of `datetime.utcnow()`
+- **Backwards Compatibility**: Recording get/delete endpoints search by UUID pattern to find both old and new filename formats
+- **Error Suppression**: Set environment variables to minimize HuggingFace/transformers verbosity
+- **Network Resilience**: App handles corporate proxy/SSL issues gracefully
+
+### User Experience Improvements
+- ✅ **Intuitive file organization** - Recordings named with date, time, and duration
+- ✅ **Flexible workflow** - Save or delete recordings as needed
+- ✅ **Clean interface** - Minimal clutter, focused on essential information
+- ✅ **Graceful degradation** - Works on computers without model/network access
+- ✅ **Professional aesthetics** - Visualizer matches Jøkul design language
+
+### Future Roadmap Clarified
+- Clear vision for AWS IAM integration and user authentication
+- Dual knowledge base model (private + shared)
+- RAG system integration for searchable organizational knowledge
+- Strategic positioning as enterprise knowledge capture tool
+
+The application is now more production-ready with better file management, clearer error handling, and a defined path for future enterprise features.
+
+---
