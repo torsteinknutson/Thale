@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     # File Upload
     max_upload_size_mb: int = 500
     allowed_audio_extensions: str = ".m4a,.wav,.mp3,.aac,.flac,.ogg,.webm"
+    recordings_dir: str = "./backend/recordings"
     
     @property
     def allowed_extensions_list(self) -> List[str]:

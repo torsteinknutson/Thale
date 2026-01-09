@@ -33,6 +33,12 @@ async def lifespan(app: FastAPI):
     logger.info(f"   Whisper Model: {settings.whisper_model_id}")
     logger.info(f"   Frontend URL: {settings.frontend_url}")
     
+    # Create recordings directory if it doesn't exist
+    from pathlib import Path
+    recordings_path = Path(settings.recordings_dir)
+    recordings_path.mkdir(parents=True, exist_ok=True)
+    logger.info(f"   Recordings Dir: {recordings_path.absolute()}")
+    
     # Pre-load services to trigger environmental checks
     try:
         from .services import get_bedrock_service

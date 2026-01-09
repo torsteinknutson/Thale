@@ -114,4 +114,3 @@ See [DEVLOG.md](./DEVLOG.md) for detailed progress
 Internal use only - Fremtind Forsikring
 
 ---
-

@@ -76,6 +76,9 @@ Thumbs.db
 *.flac
 *.ogg
 
+# Recordings directory (user audio files)
+backend/recordings/
+
 # Jupyter Notebooks checkpoints
 .ipynb_checkpoints/
 

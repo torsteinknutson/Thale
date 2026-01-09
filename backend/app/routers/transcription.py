@@ -6,11 +6,13 @@ Handles audio file upload and transcription using Whisper model.
 import logging
 import uuid
 import asyncio
+import os
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
 from fastapi import APIRouter, File, UploadFile, HTTPException, BackgroundTasks, Form
+from fastapi.responses import FileResponse
 from sse_starlette.sse import EventSourceResponse
 
 from ..config import get_settings
@@ -254,3 +256,120 @@ async def get_transcription(transcription_id: str):
     """
     # TODO: Implement storage/retrieval of transcriptions
     raise HTTPException(status_code=404, detail="Transcription not found")
+
+
+# ==================== Recording Persistence Endpoints ====================
+
+@router.post("/recording/save")
+async def save_recording(file: UploadFile = File(...)):
+    """
+    Save an audio recording to persistent storage.
+    
+    Returns the recording ID for future retrieval.
+    Used to prevent loss of recordings on browser refresh.
+    """
+    try:
+        # Generate unique ID for this recording
+        recording_id = str(uuid.uuid4())
+        
+        # Ensure recordings directory exists
+        recordings_path = Path(settings.recordings_dir)
+        recordings_path.mkdir(parents=True, exist_ok=True)
+        
+        # Determine file extension from content type or default to .webm
+        ext = ".webm"
+        if file.filename:
+            file_ext = Path(file.filename).suffix.lower()
+            if file_ext in settings.allowed_extensions_list:
+                ext = file_ext
+        
+        # Save file
+        file_path = recordings_path / f"{recording_id}{ext}"
+        content = await file.read()
+        
+        with open(file_path, "wb") as f:
+            f.write(content)
+        
+        file_size_mb = len(content) / (1024 * 1024)
+        logger.info(f"💾 Saved recording: {recording_id}{ext} ({file_size_mb:.2f} MB)")
+        
+        return {
+            "recording_id": recording_id,
+            "filename": f"{recording_id}{ext}",
+            "size_mb": round(file_size_mb, 2)
+        }
+        
+    except Exception as e:
+        logger.error(f"Failed to save recording: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to save recording: {str(e)}"
+        )
+
+
+@router.get("/recording/{recording_id}")
+async def get_recording(recording_id: str):
+    """
+    Retrieve a saved audio recording by ID.
+    
+    Returns the audio file for playback or transcription.
+    """
+    try:
+        # Find the recording file (check all allowed extensions)
+        recordings_path = Path(settings.recordings_dir)
+        
+        for ext in settings.allowed_extensions_list:
+            file_path = recordings_path / f"{recording_id}{ext}"
+            if file_path.exists():
+                logger.info(f"📁 Retrieved recording: {recording_id}{ext}")
+                return FileResponse(
+                    path=str(file_path),
+                    media_type="audio/webm",
+                    filename=f"recording{ext}"
+                )
+        
+        raise HTTPException(status_code=404, detail="Recording not found")
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to retrieve recording: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to retrieve recording: {str(e)}"
+        )
+
+
+@router.delete("/recording/{recording_id}")
+async def delete_recording(recording_id: str):
+    """
+    Delete a saved audio recording by ID.
+    
+    Permanently removes the recording file from storage.
+    """
+    try:
+        recordings_path = Path(settings.recordings_dir)
+        deleted = False
+        
+        # Check all possible extensions and delete if found
+        for ext in settings.allowed_extensions_list:
+            file_path = recordings_path / f"{recording_id}{ext}"
+            if file_path.exists():
+                os.remove(file_path)
+                deleted = True
+                logger.info(f"🗑️  Deleted recording: {recording_id}{ext}")
+                break
+        
+        if not deleted:
+            raise HTTPException(status_code=404, detail="Recording not found")
+        
+        return {"message": "Recording deleted successfully", "recording_id": recording_id}
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Failed to delete recording: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Failed to delete recording: {str(e)}"
+        )

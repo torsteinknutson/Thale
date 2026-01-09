@@ -427,3 +427,70 @@ This state represents a highly polished, visually consistent ("Fremtind Grotesk"
   - Refined Norwegian phrasing in prompt templates for better summary generation.
 
 The dashboard now offers a robust "Record -> Pause/Stop -> Review -> Continue" workflow.
+
+## Checkpoint 11: Audio Recording Persistence & Enhanced Playback Controls
+**Date**: 2026-01-09
+**Phase**: Phase 4 Polish
+
+### What Was Done
+- **Backend Audio Persistence**:
+  - Added `recordings_dir` configuration setting to persist audio files to disk.
+  - Created new API endpoints for recording lifecycle management:
+    - `POST /api/transcription/recording/save` - Saves audio blob to disk with UUID filename
+    - `GET /api/transcription/recording/{id}` - Retrieves saved recording
+    - `DELETE /api/transcription/recording/{id}` - Deletes recording file
+  - Recordings directory automatically created on app startup.
+  - Added `backend/recordings/` to `.gitignore` to prevent committing user audio files.
+
+- **Frontend Auto-Save & Restore**:
+  - Modified `useAudioRecorder` hook to automatically save recordings to backend when stopped.
+  - Implemented localStorage persistence (`thale_current_recording_id`) for session continuity.
+  - Recording automatically restored on page load/refresh if ID exists in localStorage.
+  - Graceful error handling with user-friendly messages if storage fails.
+
+- **Enhanced Playback Controls**:
+  - Replaced static play button with **Play/Pause toggle** with proper icons (▶️/⏸️).
+  - Implemented **real-time playback timer** that tracks current position during playback.
+  - Added audio element event listeners (`timeupdate`, `play`, `pause`, `ended`) for state tracking.
+  - Timer now displays current playback position when playing, recording time otherwise.
+
+- **User-Facing Delete Button**:
+  - Added "Slett opptak" button for manual recording cleanup.
+  - Confirmation dialog before deletion to prevent accidental data loss.
+  - Red styling to indicate destructive action.
+  - Properly clears both backend file and localStorage.
+
+- **Session Lifecycle Improvements**:
+  - Reset session now deletes backend recording file in addition to clearing browser state.
+  - All cleanup operations properly remove localStorage entries for consistency.
+
+- **UI Refinements**:
+  - Audio visualizer now fades out (opacity transition) when recording stops instead of freezing.
+  - Maintains layout stability during state transitions.
+
+### Key Decisions Made
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Storage Location | File system (`./backend/recordings/`) | Simple, effective for development; easy migration to database later |
+| File Format | WebM (Opus codec) | Browser-native format from MediaRecorder API; good compression |
+| Persistence Strategy | Auto-save on stop + localStorage | Prevents data loss on refresh without user intervention |
+| Session Model | Single recording per session | Simplified UX; user manages via manual delete |
+| Error Handling | Non-blocking with user messages | Storage failures show friendly errors but don't crash the app |
+
+### User Experience Improvements
+- ✅ **No data loss on browser refresh** - Recordings persist to disk and restore automatically
+- ✅ **Live playback tracking** - Timer shows current position during playback
+- ✅ **Intuitive controls** - Play/pause toggle with visual feedback
+- ✅ **Manual cleanup** - User can delete recordings when done
+- ✅ **Graceful degradation** - Friendly error messages if storage fails
+
+### Technical Notes
+- WebM format (.webm) with Opus audio codec used for recordings
+- Recording IDs are UUIDs to prevent collisions
+- Files persist across browser sessions and computer restarts
+- Future consideration: Database storage for production with metadata tracking
+
+The app now provides enterprise-ready recording persistence while maintaining development simplicity with a single-session workflow.
+
+```

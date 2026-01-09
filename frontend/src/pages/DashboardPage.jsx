@@ -43,6 +43,7 @@ export default function DashboardPage() {
         formattedTime,
         audioBlob,
         error: recordingError,
+        recordingId,
         startRecording,
         stopRecording,
         pauseRecording,
@@ -77,9 +78,12 @@ export default function DashboardPage() {
     const [summaryCopySuccess, setSummaryCopySuccess] = useState(false)
     const [transcriptionProgress, setTranscriptionProgress] = useState(0)
 
-    // Audio Playback
+    // Audio Playback State
     const audioPlayerRef = useRef(null)
     const audioUrl = useRef(null)
+    const [isPlaying, setIsPlaying] = useState(false)
+    const [playbackTime, setPlaybackTime] = useState(0)
+    const [duration, setDuration] = useState(0)
 
     // Update audio URL when blob changes
     useEffect(() => {
@@ -88,7 +92,37 @@ export default function DashboardPage() {
             if (audioPlayerRef.current) {
                 audioPlayerRef.current.src = audioUrl.current
                 audioPlayerRef.current.load()
+                
+                // Set up event listeners for playback tracking
+                const audio = audioPlayerRef.current
+                
+                const handleTimeUpdate = () => setPlaybackTime(audio.currentTime)
+                const handlePlay = () => setIsPlaying(true)
+                const handlePause = () => setIsPlaying(false)
+                const handleEnded = () => {
+                    setIsPlaying(false)
+                    setPlaybackTime(0)
+                }
+                const handleLoadedMetadata = () => setDuration(audio.duration)
+                
+                audio.addEventListener('timeupdate', handleTimeUpdate)
+                audio.addEventListener('play', handlePlay)
+                audio.addEventListener('pause', handlePause)
+                audio.addEventListener('ended', handleEnded)
+                audio.addEventListener('loadedmetadata', handleLoadedMetadata)
+                
+                return () => {
+                    audio.removeEventListener('timeupdate', handleTimeUpdate)
+                    audio.removeEventListener('play', handlePlay)
+                    audio.removeEventListener('pause', handlePause)
+                    audio.removeEventListener('ended', handleEnded)
+                    audio.removeEventListener('loadedmetadata', handleLoadedMetadata)
+                }
             }
+        } else {
+            setIsPlaying(false)
+            setPlaybackTime(0)
+            setDuration(0)
         }
         return () => {
             if (audioUrl.current) URL.revokeObjectURL(audioUrl.current)
@@ -135,20 +169,77 @@ export default function DashboardPage() {
         }, isContinuing)
     }
 
-    // Playback Handler
-    const handlePlayRecording = () => {
+    // Playback Handler - Toggle play/pause
+    const handleTogglePlayback = () => {
         if (audioPlayerRef.current) {
-            audioPlayerRef.current.play()
+            if (isPlaying) {
+                audioPlayerRef.current.pause()
+            } else {
+                audioPlayerRef.current.play()
+            }
+        }
+    }
+
+    // Delete Recording Handler
+    const handleDeleteRecording = async () => {
+        if (!window.confirm('Er du sikker på at du vil slette opptaket? Dette kan ikke angres.')) {
+            return
+        }
+
+        try {
+            if (recordingId) {
+                const response = await fetch(`/api/transcription/recording/${recordingId}`, {
+                    method: 'DELETE',
+                })
+                
+                if (!response.ok) {
+                    throw new Error('Kunne ikke slette opptak fra server')
+                }
+            }
+            
+            clearRecording()
+            setIsPlaying(false)
+            setPlaybackTime(0)
+            setDuration(0)
+            
+        } catch (err) {
+            setError(err.message || 'Kunne ikke slette opptak')
         }
     }
 
     // Reset Handler
-    const handleResetSession = () => {
-        if (window.confirm('Er du sikker på at du vil starte en ny sesjon? Dette sletter opptaket.')) {
+    const handleResetSession = async () => {
+        if (!window.confirm('Er du sikker på at du vil starte en ny sesjon? Dette sletter opptaket.')) {
+            return
+        }
+
+        try {
+            // Delete recording from server if it exists
+            if (recordingId) {
+                await fetch(`/api/transcription/recording/${recordingId}`, {
+                    method: 'DELETE',
+                })
+            }
+            
             clearRecording()
             setTranscriptionText('')
             setSummaryResult('')
             setError(null)
+            setIsPlaying(false)
+            setPlaybackTime(0)
+            setDuration(0)
+            if (isLiveMode) disconnect()
+            
+        } catch (err) {
+            // Continue with reset even if delete fails
+            console.error('Failed to delete recording:', err)
+            clearRecording()
+            setTranscriptionText('')
+            setSummaryResult('')
+            setError(null)
+            setIsPlaying(false)
+            setPlaybackTime(0)
+            setDuration(0)
             if (isLiveMode) disconnect()
         }
     }
@@ -403,11 +494,11 @@ export default function DashboardPage() {
                             )}
                         </button>
 
-                        {/* Play Button (Left) */}
+                        {/* Play/Pause Button (Left) */}
                         <button
-                            onClick={handlePlayRecording}
+                            onClick={handleTogglePlayback}
                             disabled={isRecording || !audioBlob}
-                            title="Spill av opptak"
+                            title={isPlaying ? "Pause avspilling" : "Spill av opptak"}
                             style={{
                                 width: '56px',
                                 height: '56px',
@@ -423,9 +514,18 @@ export default function DashboardPage() {
                                 transition: 'all 0.2s'
                             }}
                         >
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                                <path d="M8 5v14l11-7z" />
-                            </svg>
+                            {isPlaying ? (
+                                /* Pause Icon */
+                                <div style={{ width: '24px', height: '24px', display: 'flex', gap: '6px', justifyContent: 'center', alignItems: 'center' }}>
+                                    <div style={{ width: '6px', height: '20px', background: '#2b2b2c', borderRadius: '2px' }}></div>
+                                    <div style={{ width: '6px', height: '20px', background: '#2b2b2c', borderRadius: '2px' }}></div>
+                                </div>
+                            ) : (
+                                /* Play Icon */
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M8 5v14l11-7z" />
+                                </svg>
+                            )}
                         </button>
 
                         {/* Record Button (Center) */}
@@ -474,7 +574,11 @@ export default function DashboardPage() {
 
                         {/* Timer */}
                         <div className="timer-display jkl-heading-2" style={{ margin: 0, minWidth: '80px', textAlign: 'center' }}>
-                            {formattedTime}
+                            {isPlaying ? (
+                                `${Math.floor(playbackTime / 60).toString().padStart(2, '0')}:${Math.floor(playbackTime % 60).toString().padStart(2, '0')}`
+                            ) : (
+                                formattedTime
+                            )}
                         </div>
                     </div>
                 </div>
@@ -483,7 +587,7 @@ export default function DashboardPage() {
 
                 {/* Center: Visualizer and Subtitle */}
                 <div style={{ flex: 1, maxWidth: '400px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-                    <div style={{ width: '100%', height: '40px', display: 'flex', alignItems: 'center' }}>
+                    <div style={{ width: '100%', height: '40px', display: 'flex', alignItems: 'center', opacity: isRecording ? 1 : 0, transition: 'opacity 0.3s' }}>
                         <AudioVisualizer stream={stream} isRecording={isRecording} height={40} width={400} />
                     </div>
                     {/* Subtitle Zone */}
@@ -506,12 +610,25 @@ export default function DashboardPage() {
 
                 {/* Right: Settings & Upload */}
                 {/* Right: Settings (Empty/Transcribe Only) */}
-                <div className="recording-settings" style={{ marginTop: 0, paddingTop: 0, width: 'auto', gap: '16px' }}>
+                <div className="recording-settings" style={{ marginTop: 0, paddingTop: 0, width: 'auto', display: 'flex', flexDirection: 'column', gap: '12px' }}>
 
                     {audioBlob && !isRecording && (
-                        <PrimaryButton onClick={handleTranscribeFile} disabled={isTranscribing}>
-                            {isTranscribing ? <Loader /> : 'Transkriber opptak'}
-                        </PrimaryButton>
+                        <>
+                            <PrimaryButton onClick={handleTranscribeFile} disabled={isTranscribing}>
+                                {isTranscribing ? <Loader /> : 'Transkriber opptak'}
+                            </PrimaryButton>
+                            
+                            <SecondaryButton 
+                                onClick={handleDeleteRecording} 
+                                disabled={isTranscribing}
+                                style={{ 
+                                    color: '#d32f2f',
+                                    borderColor: '#d32f2f'
+                                }}
+                            >
+                                Slett opptak
+                            </SecondaryButton>
+                        </>
                     )}
                 </div>
             </Card>
