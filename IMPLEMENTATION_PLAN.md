@@ -338,7 +338,17 @@ THALE/
 - [ ] **EC2 with GPU**: 
   - Instance type: `g4dn.xlarge` (1 T4 GPU, cost-effective)
   - Or `p3.2xlarge` for higher performance
-- [ ] **S3 Bucket**: For temporary audio storage
+- [ ] **S3 Bucket for Audio Storage**: 
+  - Replace local file system storage with S3 for recordings
+  - Bucket structure: `s3://thale-recordings/{session-id}/recording.webm`
+  - Implement lifecycle policies for automatic cleanup (e.g., delete after 30 days)
+  - Configure CORS for direct browser upload (optional optimization)
+  - Use pre-signed URLs for secure temporary access
+- [ ] **Backend S3 Integration**:
+  - Update recording save endpoint to upload to S3 using boto3
+  - Update recording retrieval to generate pre-signed URLs
+  - Update delete endpoint to remove from S3
+  - Environment variable for S3 bucket name
 - [ ] **ECR**: Container registry for Docker images
 - [ ] **CloudFront + S3**: Frontend distribution
 - [ ] **Application Load Balancer**: HTTPS termination, routing
@@ -347,7 +357,7 @@ THALE/
 | Resource | Specification | Est. Monthly Cost |
 |----------|---------------|-------------------|
 | EC2 g4dn.xlarge | 4 vCPU, 16GB RAM, 1 T4 GPU | ~$350-450 (on-demand) |
-| S3 | Audio storage (50GB) | ~$5 |
+| S3 Recordings | Audio storage (50GB) + requests | ~$5-10 |
 | CloudFront | CDN for frontend | ~$10 |
 | ALB | Load balancer | ~$20 |
 | ECR | Container images | ~$5 |

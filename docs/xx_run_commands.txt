@@ -22,7 +22,6 @@ Start bedrock:
 
 aws sso login --profile nice-dev
 
-^^Dette går ikke på denne appen fordi du ikke har en cofig / kanskje CLI tool satt opp som kobler deg opp. hvordan var dette igjen?
-du må ha den configen i .aws folderen på root et eller annet sted
+^^Du må ha .aws cofig på din lokale maskin / kanskje CLI tool satt opp som kobler deg opp. 
 
 

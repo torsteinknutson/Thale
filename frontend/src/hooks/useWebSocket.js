@@ -37,11 +37,17 @@ export function useWebSocket() {
             socket.onclose = (event) => {
                 console.log('WebSocket disconnected', event.code, event.reason)
                 setIsConnected(false)
+                
+                // Provide helpful error messages based on close code
+                if (event.code === 1006) {
+                    // Abnormal closure - typically means backend is not running
+                    setError('Backend-serveren er ikke tilgjengelig. Sjekk at backend server kjører.')
+                }
             }
 
             socket.onerror = (event) => {
                 console.error('WebSocket error:', event)
-                setError('Kunne ikke koble til serveren via WebSocket')
+                setError('Kunne ikke koble til backend-serveren. Sjekk at backend server kjører.')
             }
 
             socket.onmessage = (event) => {
