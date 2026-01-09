@@ -34,6 +34,8 @@ A browser-based application for transcribing meeting recordings using OpenAI's W
 
 ### Local Development
 
+#### Linux/macOS
+
 1. **Clone the repository**
    ```bash
    git clone https://github.com/torsteinknutson/Thale.git
@@ -44,9 +46,9 @@ A browser-based application for transcribing meeting recordings using OpenAI's W
    ```bash
    cd backend
    python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   source venv/bin/activate
    pip install -r requirements.txt
-   uvicorn app.main:app --reload
+   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
    ```
 
 3. **Frontend setup**
@@ -56,16 +58,55 @@ A browser-based application for transcribing meeting recordings using OpenAI's W
    npm run dev
    ```
 
+#### Windows (Corporate Environment)
+
+> **Note**: Windows setup uses global Python packages and esbuild-wasm for compatibility with corporate security policies.
+
+1. **Clone the repository**
+   ```powershell
+   git clone https://github.com/torsteinknutson/Thale.git
+   cd Thale
+   ```
+
+2. **Backend setup**
+   ```powershell
+   # Install audio processing dependencies
+   pip install librosa soundfile
+   
+   # Start backend server
+   python -m uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8000
+   ```
+
+3. **Frontend setup**
+   ```powershell
+   cd frontend
+   npm install
+   npm run dev
+   ```
+   Or from root:
+   ```powershell
+   npm run dev --prefix frontend
+   ```
+
+4. **AWS Authentication**
+   ```powershell
+   aws sso login --profile nice-dev
+   ```
+
 ## Documentation
 
 - [Implementation Plan](./IMPLEMENTATION_PLAN.md) - Detailed development roadmap
-- [Setup Guide](./docs/SETUP.md) - Local development setup *(coming soon)*
+- [Development Log](./DEVLOG.md) - Chronological development checkpoints
+- [Setup Guide](./docs/SETUP.md) - Local development setup (Linux)
+- Windows Setup - See above Quick Start section
 - [Deployment Guide](./docs/DEPLOYMENT.md) - AWS deployment *(coming soon)*
 - [API Documentation](./docs/API.md) - REST API reference *(coming soon)*
 
 ## Project Status
 
-🚧 **Under Development** - See [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for current progress.
+✅ **Core Features Functional** - Live transcription, file upload, and AI summarization working  
+🚧 **In Progress** - AWS deployment and production optimization  
+📝 See [DEVLOG.md](./DEVLOG.md) for detailed progress and [IMPLEMENTATION_PLAN.md](./IMPLEMENTATION_PLAN.md) for roadmap.
 
 ## License
 
