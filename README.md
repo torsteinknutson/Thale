@@ -70,8 +70,8 @@ A browser-based application for transcribing meeting recordings using OpenAI's W
 
 2. **Backend setup**
    ```powershell
-   # Install audio processing dependencies
-   pip install librosa soundfile
+   # Install dependencies
+   pip install -r backend/requirements.txt
    
    # Start backend server
    python -m uvicorn backend.app.main:app --reload --host 127.0.0.1 --port 8000
