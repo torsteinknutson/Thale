@@ -1,6 +1,11 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAudioRecorder } from '../hooks/useAudioRecorder'
 import { useWebSocket } from '../hooks/useWebSocket'
+import { AudioVisualizer } from '../components/AudioVisualizer'
+import { PrimaryButton, SecondaryButton } from '@fremtind/jokul/button'
+import { Loader } from '@fremtind/jokul/loader'
+import { ErrorMessage, InfoMessage } from '@fremtind/jokul/message'
+import { Card } from '@fremtind/jokul/card'
 
 const PROMPT_TEMPLATES = {
     "oppsummering_kort": {
