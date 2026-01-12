@@ -397,9 +397,11 @@ export default function DashboardPage() {
             const decoder = new TextDecoder()
 
             let buffer = ''
+            let streamDone = false
 
-            while (true) {
+            while (!streamDone) {
                 const { value, done } = await reader.read()
+                streamDone = done
 
                 if (value) {
                     buffer += decoder.decode(value, { stream: !done })

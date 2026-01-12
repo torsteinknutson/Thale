@@ -1,7 +1,4 @@
 import { useState, useEffect } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { Logo as JokulLogo } from '@fremtind/jokul/logo'
-import DashboardPage from './pages/DashboardPage'
 import './App.css'
 
 function App() {

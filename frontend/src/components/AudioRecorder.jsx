@@ -1,9 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useAudioRecorder } from '../hooks/useAudioRecorder'
 import { useWebSocket } from '../hooks/useWebSocket'
-import { PrimaryButton, SecondaryButton } from '@fremtind/jokul/button'
-import { Loader } from '@fremtind/jokul/loader'
-import { SuccessMessage, ErrorMessage } from '@fremtind/jokul/message'
 import { Checkbox } from '@fremtind/jokul/checkbox'
 
 /**
