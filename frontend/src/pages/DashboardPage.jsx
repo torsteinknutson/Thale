@@ -1,8 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAudioRecorder } from '../hooks/useAudioRecorder'
 import { useWebSocket } from '../hooks/useWebSocket'
-import { ErrorMessage, InfoMessage } from '@fremtind/jokul/message'
-import { Card } from '@fremtind/jokul/card'
 
 const PROMPT_TEMPLATES = {
     "oppsummering_kort": {
@@ -50,7 +48,7 @@ export default function DashboardPage() {
 
     // WebSocket Hook for Live Transcription
     const {
-        isConnected,
+        isConnected: _isConnected,
         lastMessage,
         connect,
         disconnect,
@@ -60,7 +58,7 @@ export default function DashboardPage() {
     // State
     // State
     const [transcriptionText, setTranscriptionText] = useState('')
-    const [isLiveMode, setIsLiveMode] = useState(true) // Default to live mode
+    const [isLiveMode, _setIsLiveMode] = useState(true) // Default to live mode
     const [isTranscribing, setIsTranscribing] = useState(false)
     const [isSummarizing, setIsSummarizing] = useState(false)
 
@@ -79,7 +77,7 @@ export default function DashboardPage() {
     const audioUrl = useRef(null)
     const [isPlaying, setIsPlaying] = useState(false)
     const [playbackTime, setPlaybackTime] = useState(0)
-    const [duration, setDuration] = useState(0)
+    const [_duration, setDuration] = useState(0)
 
     // Update audio URL when blob changes
     useEffect(() => {
@@ -213,7 +211,7 @@ export default function DashboardPage() {
     }
 
     // Reset Handler
-    const handleResetSession = async () => {
+    const _handleResetSession = async () => {
         if (!window.confirm('Er du sikker på at du vil starte en ny sesjon? Dette sletter opptaket.')) {
             return
         }
