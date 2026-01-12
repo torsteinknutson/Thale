@@ -1,11 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useAudioRecorder } from '../hooks/useAudioRecorder'
 import { useWebSocket } from '../hooks/useWebSocket'
-import { AudioVisualizer } from '../components/AudioVisualizer'
-import { PrimaryButton, SecondaryButton, TertiaryButton } from '@fremtind/jokul/button'
-import { TextArea } from '@fremtind/jokul/text-area'
-import { Loader } from '@fremtind/jokul/loader'
-import { SuccessMessage, ErrorMessage, InfoMessage } from '@fremtind/jokul/message'
+import { ErrorMessage, InfoMessage } from '@fremtind/jokul/message'
 import { Card } from '@fremtind/jokul/card'
 
 const PROMPT_TEMPLATES = {
