@@ -79,11 +79,14 @@ jobs:
           name: frontend-dist
           path: frontend/dist/
 
-  # Docker build (runs on main branch only)
-  docker-build:
+  # Docker build and push to ECR (runs on main branch only)
+  docker-build-push:
     needs: [backend-test, frontend-test]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
+    permissions:
+      id-token: write   # Required for OIDC authentication
+      contents: read
     
     steps:
       - uses: actions/checkout@v4
@@ -91,38 +94,42 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
       
-      # Uncomment when ready to push to ECR
-      # - name: Configure AWS credentials
-      #   uses: aws-actions/configure-aws-credentials@v4
-      #   with:
-      #     aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-      #     aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-      #     aws-region: ${{ env.AWS_REGION }}
+      - name: Configure AWS credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/gh-role-nice-thale
+          aws-region: ${{ env.AWS_REGION }}
       
-      # - name: Login to Amazon ECR
-      #   id: login-ecr
-      #   uses: aws-actions/amazon-ecr-login@v2
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
       
-      - name: Build backend image (CPU)
+      - name: Build and push backend image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: nice-thale-backend
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           docker build \
             -f backend/Dockerfile.cpu \
-            -t thale-backend:latest \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
             backend/
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
       
-      - name: Build frontend image
+      - name: Build and push frontend image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: nice-thale-frontend
+          IMAGE_TAG: ${{ github.sha }}
         run: |
           docker build \
-            -t thale-frontend:latest \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
+            -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
             frontend/
-      
-      # Uncomment when ready to push to ECR
-      # - name: Push to ECR
-      #   run: |
-      #     docker tag thale-backend:latest ${{ steps.login-ecr.outputs.registry }}/thale-backend:latest
-      #     docker push ${{ steps.login-ecr.outputs.registry }}/thale-backend:latest
-      #     docker tag thale-frontend:latest ${{ steps.login-ecr.outputs.registry }}/thale-frontend:latest
-      #     docker push ${{ steps.login-ecr.outputs.registry }}/thale-frontend:latest
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
 
   # Summary comment on PR
   summary:
