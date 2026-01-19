@@ -7,13 +7,16 @@ import logging
 import uuid
 import asyncio
 import os
+import magic
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-from fastapi import APIRouter, File, UploadFile, HTTPException, BackgroundTasks, Form
+from fastapi import APIRouter, File, UploadFile, HTTPException, BackgroundTasks, Form, Request
 from fastapi.responses import FileResponse
 from sse_starlette.sse import EventSourceResponse
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from ..config import get_settings
 from ..models import (
@@ -26,22 +29,62 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 settings = get_settings()
 
+# Rate limiter for expensive operations
+limiter = Limiter(key_func=get_remote_address)
 
-def validate_audio_file(file: UploadFile) -> None:
-    """Validate uploaded audio file."""
-    if not file.filename:
-        raise HTTPException(status_code=400, detail="No filename provided")
+# Allowed MIME types for audio files
+ALLOWED_MIME_TYPES = {
+    "audio/mpeg",       # MP3
+    "audio/x-m4a",      # M4A
+    "audio/mp4",        # M4A/AAC
+    "audio/wav",        # WAV
+    "audio/x-wav",      # WAV
+    "audio/wave",       # WAV
+    "audio/aac",        # AAC
+    "audio/flac",       # FLAC
+    "audio/ogg",        # OGG
+    "audio/webm",       # WebM
+    "application/octet-stream",  # Sometimes used for audio
+}
+
+
+def validate_audio_file(file: UploadFile, content: bytes) -> None:
+    """
+    Validate uploaded audio file using both extension and magic bytes.
     
+    Args:
+        file: The uploaded file
+        content: File content bytes for magic byte verification
+        
+    Raises:
+        HTTPException: If file is invalid
+    """
+    if not file.filename:
+        raise HTTPException(status_code=400, detail="Ingen filnavn oppgitt")
+    
+    # Check file extension
     ext = Path(file.filename).suffix.lower()
     if ext not in settings.allowed_extensions_list:
         raise HTTPException(
             status_code=400,
-            detail=f"File type '{ext}' not allowed. Allowed types: {settings.allowed_audio_extensions}"
+            detail=f"Filtype '{ext}' er ikke støttet. Tillatte typer: {settings.allowed_audio_extensions}"
         )
+    
+    # Verify file content using magic bytes
+    try:
+        mime = magic.from_buffer(content[:2048], mime=True)
+        if mime not in ALLOWED_MIME_TYPES:
+            logger.warning(f"File {file.filename} has unexpected MIME type: {mime}")
+            # Don't reject, but log it - some valid audio files may have unusual MIME types
+    except Exception as e:
+        logger.warning(f"Could not verify MIME type for {file.filename}: {e}")
+        # Continue anyway - better to be permissive than break valid uploads
 
 
 @router.post("/upload", response_model=TranscriptionResult)
+@limiter.limit("10/minute")  # Max 10 transcriptions per minute per user
 async def transcribe_audio(
+    request: Request,
     file: UploadFile = File(..., description="Audio file to transcribe"),
     language: str = Form(default="no", description="Language code"),
     generate_summary: bool = Form(default=False, description="Generate AI summary"),
@@ -54,8 +97,6 @@ async def transcribe_audio(
     
     Note: First request may take longer as the Whisper model needs to load (~3GB).
     """
-    validate_audio_file(file)
-    
     transcription_id = str(uuid.uuid4())
     start_time = datetime.utcnow()
     
@@ -66,12 +107,19 @@ async def transcribe_audio(
     file_size_mb = len(content) / (1024 * 1024)
     logger.info(f"   File size: {file_size_mb:.2f} MB")
     
+    # Validate file (extension + magic bytes)
+    validate_audio_file(file, content)
+    
     # Check file size
     if len(content) > settings.max_upload_size_bytes:
         raise HTTPException(
             status_code=413,
-            detail=f"File too large. Maximum size: {settings.max_upload_size_mb}MB"
+            detail=f"Filen er for stor. Maksimal størrelse: {settings.max_upload_size_mb}MB"
         )
+    
+    # Ensure file has actual content
+    if len(content) == 0:
+        raise HTTPException(status_code=400, detail="Filen er tom")
     
     try:
         # Get the Whisper service and transcribe
@@ -97,18 +145,27 @@ async def transcribe_audio(
         logger.warning(f"ML dependencies not available: {e}")
         raise HTTPException(
             status_code=503,
-            detail="Transcription service not available. ML dependencies may not be installed."
+            detail="Transkriberingstjenesten er ikke tilgjengelig. ML-avhengigheter kan mangle."
+        )
+    except ValueError as e:
+        # Invalid audio format or corrupted file
+        logger.error(f"Invalid audio file: {e}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Ugyldig lydfil: {str(e)}. Prøv et annet format (MP3, WAV, M4A)."
         )
     except Exception as e:
-        logger.error(f"Transcription failed: {e}")
+        logger.error(f"Transcription failed: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Transcription failed: {str(e)}"
+            detail=f"Transkripsjon feilet: {str(e)}"
         )
 
 
 @router.post("/upload/stream")
+@limiter.limit("10/minute")  # Max 10 streaming transcriptions per minute
 async def transcribe_audio_stream(
+    request: Request,
     file: UploadFile = File(..., description="Audio file to transcribe"),
     language: str = Form(default="no", description="Language code"),
 ):
@@ -117,8 +174,6 @@ async def transcribe_audio_stream(
     
     Returns SSE stream with progress updates and final transcription.
     """
-    validate_audio_file(file)
-    
     transcription_id = str(uuid.uuid4())
     start_time = datetime.utcnow()
     
@@ -128,13 +183,27 @@ async def transcribe_audio_stream(
     file_size_mb = len(content) / (1024 * 1024)
     logger.info(f"   File size: {file_size_mb:.2f} MB")
     
+    # Validate file
+    try:
+        validate_audio_file(file, content)
+    except HTTPException as e:
+        async def error_generator():
+            yield {"event": "error", "data": e.detail}
+        return EventSourceResponse(error_generator())
+    
     # Check file size
     if len(content) > settings.max_upload_size_bytes:
         async def error_generator():
             yield {
                 "event": "error",
-                "data": f"File too large. Maximum size: {settings.max_upload_size_mb}MB"
+                "data": f"Filen er for stor. Maksimal størrelse: {settings.max_upload_size_mb}MB"
             }
+        return EventSourceResponse(error_generator())
+    
+    # Check for empty file
+    if len(content) == 0:
+        async def error_generator():
+            yield {"event": "error", "data": "Filen er tom"}
         return EventSourceResponse(error_generator())
     
     progress_updates = []

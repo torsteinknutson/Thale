@@ -20,8 +20,16 @@ A browser-based application for transcribing meeting recordings using OpenAI's W
 | Backend | FastAPI (Python) |
 | ML Model | NbAiLab/nb-whisper-large |
 | LLM | AWS Bedrock (Claude Sonnet) |
-| Infrastructure | Docker + AWS (GPU instances) |
-| CI/CD | GitHub Actions |
+| Infrastructure | Docker + AWS Kubernetes (Shifter) |
+| CI/CD | GitHub Actions + FluxCD |
+
+## Security & Production Features
+
+- ✅ **File Validation**: Magic byte verification prevents malformed/malicious files
+- ✅ **Rate Limiting**: Protects against resource exhaustion (10 transcriptions/min per user)
+- ✅ **Error Handling**: User-friendly Norwegian error messages with actionable guidance
+- ✅ **CORS Restrictions**: Configured for specific frontend origins only
+- 🔜 **Humio Integration**: Centralized logging with Fremtind's Humio platform (see notes below)
 
 ## Quick Start
 
@@ -102,6 +110,26 @@ A browser-based application for transcribing meeting recordings using OpenAI's W
 - [Windows Setup] - See above Quick Start section
 - [Deployment Guide](./docs/DEPLOYMENT.md) - AWS deployment *(coming soon)*
 - [API Documentation](./docs/API.md) - REST API reference *(coming soon)*
+
+## Production Deployment
+
+THALE is deployed on Fremtind's AWS Kubernetes platform (Shifter) using GitOps workflow:
+- **Infrastructure**: Managed via `app-configrepo-fremtind` repository
+- **Container Registry**: AWS ECR
+- **Auto-deployment**: FluxCD watches for new images and auto-deploys to test environment
+- **Internal Access**: `https://nice-thale.intern.app.devaws.fremtind.no` (office gateway)
+
+See [DEVLOG.md](./DEVLOG.md) for detailed deployment progress and learnings.
+
+## Logging & Observability
+
+**Note for Future Integration:**
+Fremtind uses Humio for centralized log aggregation. The Shifter/Kubernetes platform likely auto-configures log shipping to Humio. To verify:
+1. Check if logs appear in Humio after deployment
+2. If not, add Humio forwarder configuration to Kubernetes manifests
+3. Ensure structured logging fields include: `request_id`, `user_id`, `duration_ms`, `status`
+
+Current implementation uses standard Python logging which should be compatible with Humio's log collectors.
 
 ## Project Status
 
