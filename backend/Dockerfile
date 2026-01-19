@@ -1,4 +1,4 @@
-# THALE Backend Dockerfile
+﻿# THALE Backend Dockerfile
 # GPU-enabled container for Whisper transcription
 
 # Use NVIDIA CUDA base image for GPU support
@@ -8,7 +8,9 @@ FROM nvidia/cuda:12.1-runtime-ubuntu22.04
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    HF_HOME=/app/.cache/huggingface \
+    TRANSFORMERS_CACHE=/app/.cache/huggingface
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
@@ -18,6 +20,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libsndfile1 \
     ffmpeg \
     curl \
+    git \
     && rm -rf /var/lib/apt/lists/* \
     && ln -sf /usr/bin/python3.11 /usr/bin/python3 \
     && ln -sf /usr/bin/python3.11 /usr/bin/python
@@ -36,12 +39,16 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Pre-download the Whisper model to avoid download on first request
 # This adds ~3GB to the image but improves cold start time significantly
-RUN python -c "\
+# Set timeouts and retry logic for model download
+RUN mkdir -p /app/.cache/huggingface && \
+    python -c "\
+import os; \
+os.environ[''HF_HUB_DOWNLOAD_TIMEOUT''] = ''300''; \
 from transformers import WhisperProcessor, WhisperForConditionalGeneration; \
-print('Downloading NB-Whisper model...'); \
-WhisperProcessor.from_pretrained('NbAiLab/nb-whisper-large'); \
-WhisperForConditionalGeneration.from_pretrained('NbAiLab/nb-whisper-large'); \
-print('Model downloaded successfully')"
+print(''Downloading NB-Whisper model...''); \
+WhisperProcessor.from_pretrained(''NbAiLab/nb-whisper-large''); \
+WhisperForConditionalGeneration.from_pretrained(''NbAiLab/nb-whisper-large''); \
+print(''Model downloaded successfully'')" || echo "Model download skipped - will download at runtime"
 
 # Copy application code
 COPY ./app /app/app
