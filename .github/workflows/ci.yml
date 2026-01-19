@@ -1,4 +1,4 @@
-# THALE CI/CD Pipeline
+﻿# THALE CI/CD Pipeline
 # Builds and deploys both frontend and backend
 
 name: CI/CD Pipeline
@@ -43,7 +43,7 @@ jobs:
         continue-on-error: true
       
       - name: Test imports
-        run: python -c "from app.main import app; print('✅ App imports successfully')"
+        run: python -c "from app.main import app; print('âœ… App imports successfully')"
         continue-on-error: true
 
   # Frontend linting and build
@@ -111,7 +111,7 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         run: |
           docker build \
-            -f backend/Dockerfile.cpu \
+            -f backend/Dockerfile \
             -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG \
             -t $ECR_REGISTRY/$ECR_REPOSITORY:latest \
             backend/
@@ -140,9 +140,9 @@ jobs:
     steps:
       - name: Add summary
         run: |
-          echo "## THALE CI Summary ✅" >> $GITHUB_STEP_SUMMARY
+          echo "## THALE CI Summary âœ…" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "| Component | Status |" >> $GITHUB_STEP_SUMMARY
           echo "|-----------|--------|" >> $GITHUB_STEP_SUMMARY
-          echo "| Backend | ✅ Tests passed |" >> $GITHUB_STEP_SUMMARY
-          echo "| Frontend | ✅ Build successful |" >> $GITHUB_STEP_SUMMARY
+          echo "| Backend | âœ… Tests passed |" >> $GITHUB_STEP_SUMMARY
+          echo "| Frontend | âœ… Build successful |" >> $GITHUB_STEP_SUMMARY
