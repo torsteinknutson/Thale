@@ -591,3 +591,128 @@ The app now provides enterprise-ready recording persistence while maintaining de
 The application is now more production-ready with better file management, clearer error handling, and a defined path for future enterprise features.
 
 ---
+
+## Checkpoint: AWS Deployment Preparation
+**Date**: 2026-01-16 to 2026-01-19  
+**Phase**: Infrastructure & Deployment
+
+### What Was Done
+
+#### 1. Infrastructure Repository Setup (PR #157750)
+- Created infrastructure manifests in `app-configrepo-fremtind` repository
+- Set up ECR (Elastic Container Registry) for Docker images
+- Configured GitHub OIDC authentication (no AWS keys needed in GitHub!)
+- Created Kubernetes namespaces and application resources
+
+**Files Created in configrepo:**
+```
+clusters/fremtind-shared-infra/infra/fremtind-team-nice/nice-thale/
+ app-image-repository.yaml  # ECR: nice-thale-ecr
+ github-ecr-role.yaml       # GitHub OIDC role
+ kustomization.yaml
+ namespace.yaml
+
+apps/nice-thale/
+ base/
+    shifter.yaml          # Application definition
+    kustomization.yaml
+ test/
+    appnamespace.yaml     # Test namespace
+    postgres.yaml         # PostgreSQL database
+    shifter-patch.yaml    # Resources & image
+    virtualservice.yaml   # Istio routing
+    kustomization.yaml
+ image-updater.yaml        # Auto-deployment config
+ README.md
+```
+
+#### 2. GitHub Actions CI/CD Workflow
+- Created `.github/workflows/ci.yml` in nice-thale repo
+- Automated Docker image building for backend and frontend
+- OIDC authentication to AWS (no static credentials!)
+- Automatic push to ECR on merge to main
+
+**Images built:**
+- Backend: `nice-thale-backend` (using `Dockerfile.cpu`)
+- Frontend: `nice-thale-frontend`
+- Tagged with both `latest` and `<commit-sha>`
+
+#### 3. Code Review & Platform Standards
+Received code review from Tore Haugland (Fremtind platform team). Fixed all issues:
+
+**Changes made:**
+- Removed `istio-injection: enabled` label (auto-included by platform)
+- Changed `PGInstanceShared` to `PGInstance`
+- Removed unnecessary `PGInstanceUserIAM` resource
+- Fixed `image-updater.yaml` format (was using wrong Flux CD syntax)
+- Added proper VirtualService configuration:
+  - Gateway: `istio-system/office-gateway`
+  - Hostname: `nice-thale.intern.app.devaws.fremtind.no`
+
+### Key Decisions Made
+
+| Decision | Choice | Rationale |
+|----------|--------|-----------|
+| Deployment Platform | Fremtind Shifter (Kubernetes) | Company standard, managed infrastructure |
+| Image Registry | AWS ECR | Integrated with AWS infrastructure |
+| Database | PostgreSQL 17.7 (managed RDS) | Stable, automatic backups, managed by platform |
+| Instance Size | db.t4g.small | Appropriate for initial testing |
+| Authentication | GitHub OIDC | Secure, no static credentials |
+| Auto-deployment | Test environment only | Safe iteration, prod requires approval |
+| Network Access | Internal office gateway | Secure, corporate network only |
+
+### Infrastructure Architecture
+```
+GitHub Actions (on push to main)
+     (builds images)
+ECR Registry
+     (FluxCD watches)
+Kubernetes Cluster
+     nice-thale-test namespace
+        Backend pods (1 replica, 1Gi RAM, 500m CPU)
+        PostgreSQL RDS (db.t4g.small)
+        VirtualService (Istio routing)
+     Access via office-gateway
+         -> https://nice-thale.intern.app.devaws.fremtind.no
+```
+
+### Challenges Encountered
+1. **Initial validation errors** - Fixed namespace definitions and file structure
+2. **Wrong Flux CD syntax** - Learned Fremtind simplified `autoapprove` format
+3. **VirtualService configuration** - Needed proper hostname and gateway specification
+4. **Database resource type** - Used wrong `PGInstanceShared` initially
+
+### Learning Points
+- Fremtind uses GitOps (FluxCD) - git is source of truth, changes auto-applied
+- Platform has its own simplified abstractions over standard Kubernetes resources
+- Code review process is thorough and educational
+- OIDC authentication eliminates need for AWS access keys
+- Auto-approval configuration enables fast iteration in test environments
+
+### PR Status
+- **PR #157750** in `app-configrepo-fremtind`
+- **Approvals**: 2/3 received (team-smart-utvikling, aws-plattform)
+- **Status**: Ready to merge
+- **Branch**: `pr-157750`
+
+### Next Steps (When PR Merges)
+1. ECR repository will be auto-created
+2. Push code to trigger GitHub Actions build
+3. Images will be pushed to ECR
+4. FluxCD will auto-deploy to test environment
+5. PostgreSQL database will be provisioned
+6. Application accessible via internal URL
+
+### Documentation Created
+- `xx_AWS_deployment/DEPLOYMENT_PROGRESS.md` - Complete deployment tracker
+- `xx_AWS_deployment/DOCKER_ECR_SETUP.md` - ECR and Docker details
+- Updated `README.md` in configrepo with deployment info
+
+### Notes
+- First experience with Fremtind deployment platform and GitOps workflow
+- Learning curve on Shifter abstractions and platform standards
+- Code review process valuable for understanding platform expectations
+- Infrastructure-as-code approach makes deployment reproducible and auditable
+
+---
+
