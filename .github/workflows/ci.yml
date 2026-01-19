@@ -84,6 +84,7 @@ jobs:
     needs: [backend-test, frontend-test]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
+    continue-on-error: true  # Allow failure until AWS infrastructure is provisioned
     permissions:
       id-token: write   # Required for OIDC authentication
       contents: read
