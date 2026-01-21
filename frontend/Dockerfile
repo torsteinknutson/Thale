@@ -2,7 +2,7 @@
 # Multi-stage build for optimized production image
 
 # Build stage
-FROM node:22-alpine AS builder
+FROM node:22.12.0-alpine3.20 AS builder
 
 WORKDIR /app
 
@@ -19,7 +19,7 @@ COPY . .
 RUN npm run build
 
 # Production stage - use nginx to serve static files
-FROM nginx:alpine AS production
+FROM nginx:1.27-alpine AS production
 
 # Copy custom nginx config
 COPY nginx.conf /etc/nginx/conf.d/default.conf

@@ -2,7 +2,7 @@
 # GPU-enabled container for Whisper transcription
 
 # Use NVIDIA CUDA base image for GPU support
-FROM nvidia/cuda:12.1-runtime-ubuntu22.04
+FROM nvidia/cuda:12.1.0-runtime-ubuntu22.04
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1 \
